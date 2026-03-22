@@ -67,10 +67,10 @@ Pick only what you actually use:
 Examples:
 
 ```bash
-npm run trello:from-task -- --id <task_id> --dry-run
-npm run todoist:from-task -- --id <task_id> --dry-run
-npm run notion:from-task -- --id <task_id> --dry-run
-npm run google:from-task -- --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+npm run publish -- --to trello --id <task_id> --dry-run
+npm run publish -- --to todoist --id <task_id> --dry-run
+npm run publish -- --to notion --id <task_id> --dry-run
+npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
 ```
 
 ## Files written locally

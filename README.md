@@ -23,6 +23,21 @@ Aristotle sits on top of Canvas and gives you:
 - course-specific prep views
 - one-command publishing into popular calendar, task, and notes apps
 
+## 30-second demo
+
+```bash
+npm run canvas:sync
+npm run tasks
+npm run publish -- --to trello --id <task_id> --dry-run
+npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+```
+
+That is the core loop:
+
+1. pull assignments from Canvas
+2. let Aristotle break them into tasks
+3. push the one you care about into the external tool you actually use
+
 ## Product shape
 
 This repo is intentionally not a dashboard app.
@@ -121,16 +136,26 @@ Once Aristotle has local tasks, you can push a task into the apps you actually u
 Examples:
 
 ```bash
-npm run trello:from-task -- --id <task_id> --dry-run
-npm run todoist:from-task -- --id <task_id> --dry-run
-npm run notion:from-task -- --id <task_id> --dry-run
-npm run google-tasks:from-task -- --id <task_id> --dry-run
-npm run microsoft:todo-from-task -- --id <task_id> --dry-run
-npm run google:from-task -- --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
-npm run microsoft:calendar-from-task -- --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+npm run publish -- --to trello --id <task_id> --dry-run
+npm run publish -- --to todoist --id <task_id> --dry-run
+npm run publish -- --to notion --id <task_id> --dry-run
+npm run publish -- --to google-tasks --id <task_id> --dry-run
+npm run publish -- --to microsoft-todo --id <task_id> --dry-run
+npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+npm run publish -- --to microsoft-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
 ```
 
-For calendars, `from-task` creates a study block. For task and notes apps, `from-task` publishes the Aristotle task directly.
+Supported `--to` targets:
+
+- `google-calendar`
+- `google-tasks`
+- `trello`
+- `todoist`
+- `notion`
+- `microsoft-calendar`
+- `microsoft-todo`
+
+For calendars, `publish` creates a study block. For task and notes apps, it publishes the Aristotle task directly.
 
 ## Main commands
 
@@ -146,6 +171,10 @@ Canvas + Aristotle:
 - `npm run task -- --id <task_id> --status in_progress`
 - `npm run intake -- --interactive --sync`
 - `npm run state`
+- `npm run publish -- --to <target> --id <task_id> [--dry-run]`
+
+Power-user direct app commands:
+These stay available if you want app-specific control instead of the unified `publish` command.
 
 Google Calendar:
 
@@ -217,6 +246,7 @@ Override the default data path with `ARISTOTLE_DATA_DIR` if you want.
 - `Trello`, `Todoist`, `Notion`, and `Microsoft Graph` use API tokens in `.env`.
 - `Notion` expects a parent page ID for page creation.
 - `Microsoft Graph` expects a bearer token with the calendar and/or To Do scopes you need.
+- `publish -- --dry-run` is the safest way to verify what Aristotle will send before it creates anything.
 
 ## CLI v1 and extension v2
 

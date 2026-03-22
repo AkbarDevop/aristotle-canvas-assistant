@@ -1,6 +1,15 @@
 import type { AristotleState, Task } from "../types.js";
 import { formatDate } from "../utils.js";
 
+export type PublishTarget =
+  | "google-calendar"
+  | "google-tasks"
+  | "trello"
+  | "todoist"
+  | "notion"
+  | "microsoft-calendar"
+  | "microsoft-todo";
+
 export interface ExternalTaskDraft {
   title: string;
   description: string;
@@ -80,4 +89,70 @@ export function buildExternalCalendarDraft(
     startAt: startDate.toISOString(),
     endAt: endDate.toISOString(),
   };
+}
+
+export function resolvePublishTarget(input: string): PublishTarget {
+  const normalized = input.trim().toLowerCase();
+
+  if (
+    normalized === "google-calendar" ||
+    normalized === "google" ||
+    normalized === "gcal" ||
+    normalized === "calendar"
+  ) {
+    return "google-calendar";
+  }
+
+  if (
+    normalized === "google-tasks" ||
+    normalized === "gtasks" ||
+    normalized === "tasks"
+  ) {
+    return "google-tasks";
+  }
+
+  if (normalized === "trello") {
+    return "trello";
+  }
+
+  if (normalized === "todoist") {
+    return "todoist";
+  }
+
+  if (normalized === "notion") {
+    return "notion";
+  }
+
+  if (
+    normalized === "microsoft-calendar" ||
+    normalized === "outlook-calendar" ||
+    normalized === "outlook" ||
+    normalized === "ms-calendar"
+  ) {
+    return "microsoft-calendar";
+  }
+
+  if (
+    normalized === "microsoft-todo" ||
+    normalized === "ms-todo" ||
+    normalized === "todo"
+  ) {
+    return "microsoft-todo";
+  }
+
+  throw new Error(
+    `Unknown publish target: ${input}. Use one of: google-calendar, google-tasks, trello, todoist, notion, microsoft-calendar, microsoft-todo.`,
+  );
+}
+
+export function listPublishTargets(): PublishTarget[] {
+  return [
+    "google-calendar",
+    "google-tasks",
+    "trello",
+    "todoist",
+    "notion",
+    "microsoft-calendar",
+    "microsoft-todo",
+  ];
 }

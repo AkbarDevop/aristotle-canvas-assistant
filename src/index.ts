@@ -13,6 +13,7 @@ import {
   getTodoistConfig,
   loadLocalEnv,
 } from "./config.js";
+import type { ParsedArgs } from "./cli.js";
 import { parseArgs, readBooleanFlag, readNumberFlag, readStringFlag } from "./cli.js";
 import { readState, runDemo } from "./demo.js";
 import { FileAristotleStore } from "./memory/file-store.js";
@@ -27,7 +28,13 @@ import { TodoistClient } from "./connectors/todoist.js";
 import { NotionClient } from "./connectors/notion.js";
 import { GoogleTasksClient } from "./connectors/google-tasks.js";
 import { MicrosoftGraphClient } from "./connectors/microsoft-graph.js";
-import { buildExternalCalendarDraft, buildExternalTaskDraft, getTaskById } from "./pipeline/publish.js";
+import {
+  buildExternalCalendarDraft,
+  buildExternalTaskDraft,
+  getTaskById,
+  listPublishTargets,
+  resolvePublishTarget,
+} from "./pipeline/publish.js";
 
 async function main(): Promise<void> {
   loadLocalEnv();
@@ -123,6 +130,11 @@ async function main(): Promise<void> {
     return;
   }
 
+  if (command === "publish") {
+    await runPublishCommand(args, store);
+    return;
+  }
+
   if (command === "canvas") {
     await runCanvasCommand(args, store, dataDir);
     return;
@@ -164,7 +176,7 @@ async function main(): Promise<void> {
   }
 
   console.error(
-    "Unknown command. Use `demo`, `intake`, `tasks`, `task`, `sync`, `updates`, `prep`, `courses`, `canvas`, `google`, `google-tasks`, `trello`, `todoist`, `notion`, `microsoft`, or `state`.",
+    "Unknown command. Use `demo`, `intake`, `tasks`, `task`, `sync`, `updates`, `prep`, `courses`, `publish`, `canvas`, `google`, `google-tasks`, `trello`, `todoist`, `notion`, `microsoft`, or `state`.",
   );
   process.exitCode = 1;
 }
@@ -224,6 +236,83 @@ async function recordEnqueuedAssignment(
     },
   });
   await store.save(state);
+}
+
+async function runPublishCommand(
+  args: ReturnType<typeof parseArgs>,
+  store: FileAristotleStore,
+): Promise<void> {
+  const rawTarget = readStringFlag(args, "to") ?? args.positionals[0];
+  if (!rawTarget) {
+    throw new Error(
+      `Use \`npm run publish -- --to <target> --id <task_id> [--dry-run]\`. Targets: ${listPublishTargets().join(", ")}.`,
+    );
+  }
+
+  const target = resolvePublishTarget(rawTarget);
+  const forwarded = buildForwardedArgs(args, "from-task", rawTarget);
+
+  if (target === "google-calendar") {
+    await runGoogleCalendarCommand(forwarded, store);
+    return;
+  }
+
+  if (target === "google-tasks") {
+    await runGoogleTasksCommand(forwarded, store);
+    return;
+  }
+
+  if (target === "trello") {
+    await runTrelloCommand(forwarded, store);
+    return;
+  }
+
+  if (target === "todoist") {
+    await runTodoistCommand(forwarded, store);
+    return;
+  }
+
+  if (target === "notion") {
+    await runNotionCommand(forwarded, store);
+    return;
+  }
+
+  if (target === "microsoft-calendar") {
+    await runMicrosoftCommand(
+      {
+        positionals: ["calendar-from-task"],
+        flags: forwarded.flags,
+      },
+      store,
+    );
+    return;
+  }
+
+  await runMicrosoftCommand(
+    {
+      positionals: ["todo-from-task"],
+      flags: forwarded.flags,
+    },
+    store,
+  );
+}
+
+function buildForwardedArgs(args: ParsedArgs, subcommand: string, rawTarget: string): ParsedArgs {
+  const nextFlags: ParsedArgs["flags"] = {};
+
+  for (const [key, value] of Object.entries(args.flags)) {
+    if (key === "to") {
+      continue;
+    }
+
+    nextFlags[key] = value;
+  }
+
+  const remainingPositionals = args.positionals.filter((value, index) => !(index === 0 && value === rawTarget));
+  return {
+    positionals: [subcommand, ...remainingPositionals],
+    flags: nextFlags,
+  };
 }
 
 async function runCanvasCommand(

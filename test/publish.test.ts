@@ -1,7 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { buildExternalCalendarDraft, buildExternalTaskDraft } from "../src/pipeline/publish.js";
+import {
+  buildExternalCalendarDraft,
+  buildExternalTaskDraft,
+  resolvePublishTarget,
+} from "../src/pipeline/publish.js";
 import type { Task } from "../src/types.js";
 
 const SAMPLE_TASK: Task = {
@@ -36,4 +40,11 @@ test("buildExternalCalendarDraft converts a task into a study block", () => {
   assert.match(draft.summary, /study block/);
   assert.equal(draft.startAt, "2026-03-24T20:00:00.000Z");
   assert.equal(draft.endAt, "2026-03-24T21:30:00.000Z");
+});
+
+test("resolvePublishTarget supports friendly aliases", () => {
+  assert.equal(resolvePublishTarget("google"), "google-calendar");
+  assert.equal(resolvePublishTarget("gtasks"), "google-tasks");
+  assert.equal(resolvePublishTarget("outlook"), "microsoft-calendar");
+  assert.equal(resolvePublishTarget("todo"), "microsoft-todo");
 });

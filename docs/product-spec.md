@@ -63,25 +63,26 @@ A busy student who:
 
 Calendars:
 
-- `npm run google:from-task`
-- `npm run microsoft:calendar-from-task`
+- `npm run publish -- --to google-calendar`
+- `npm run publish -- --to microsoft-calendar`
 
 Task managers:
 
-- `npm run google-tasks:from-task`
-- `npm run trello:from-task`
-- `npm run todoist:from-task`
-- `npm run microsoft:todo-from-task`
+- `npm run publish -- --to google-tasks`
+- `npm run publish -- --to trello`
+- `npm run publish -- --to todoist`
+- `npm run publish -- --to microsoft-todo`
 
 Notes workspace:
 
-- `npm run notion:from-task`
+- `npm run publish -- --to notion`
 
 ### Outputs
 
 - `state.json` for local Aristotle state
 - `latest-report.txt` for the most recent terminal summary
 - plain-text payloads and dry runs that can be inspected before publishing
+- one unified `publish` front door, with direct per-app commands still available underneath
 
 ### Non-goals for v1
 

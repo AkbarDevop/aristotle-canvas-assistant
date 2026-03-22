@@ -36,6 +36,7 @@
     "updates": "tsx src/index.ts updates",
     "prep": "tsx src/index.ts prep",
     "courses": "tsx src/index.ts courses",
+    "publish": "tsx src/index.ts publish",
     "tasks": "tsx src/index.ts tasks",
     "task": "tsx src/index.ts task",
     "canvas:profile": "tsx src/index.ts canvas profile",
