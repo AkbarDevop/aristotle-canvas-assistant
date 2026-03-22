@@ -114,6 +114,10 @@ npm run canvas:profile
 npm run canvas:preview
 ```
 
+If you do not know where to get the required tokens and IDs, use the setup guide:
+
+- [Getting Credentials](docs/getting-credentials.md)
+
 ## Core terminal workflow
 
 ```bash
@@ -267,6 +271,7 @@ npm run test
 ## Docs
 
 - [Student Quickstart](docs/student-quickstart.md)
+- [Getting Credentials](docs/getting-credentials.md)
 - [Product Spec](docs/product-spec.md)
 
 ## License

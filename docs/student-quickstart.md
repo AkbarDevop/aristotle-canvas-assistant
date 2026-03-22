@@ -14,6 +14,10 @@ Start with:
 - `CANVAS_BASE_URL`
 - `CANVAS_ACCESS_TOKEN`
 
+If you need help finding them:
+
+- [Getting Credentials](getting-credentials.md)
+
 Optional:
 
 - `ARISTOTLE_DATA_DIR` if you do not want the default `./aristotle-data`
