@@ -2,7 +2,7 @@
 
 Aristotle Canvas Assistant is a terminal-first Canvas copilot for students who already live in `Codex`, `Claude Code`, or a shell.
 
-It pulls Canvas assignments, turns them into concrete tasks, keeps local state on your machine, and gives you fast plain-text outputs you can actually use while studying.
+It pulls Canvas assignments, turns them into concrete tasks, keeps local state on your machine, and can publish that work out to the tools people already use: Google Calendar, Google Tasks, Trello, Todoist, Notion, Outlook Calendar, and Microsoft To Do.
 
 ![Aristotle terminal preview](docs/assets/terminal-preview.svg)
 
@@ -14,13 +14,14 @@ Canvas shows deadlines. It usually does not tell you:
 - how to break an assignment down
 - what course is about to collide with another one
 - what to review for a specific class right now
+- how to push that plan into your actual workflow tools
 
-Aristotle is the narrower, more useful layer on top:
+Aristotle sits on top of Canvas and gives you:
 
-- sync real Canvas assignments
-- break them into steps
-- print a terminal report
-- let you filter by course for targeted prep
+- local task breakdowns
+- terminal reports
+- course-specific prep views
+- one-command publishing into popular calendar, task, and notes apps
 
 ## Product shape
 
@@ -35,7 +36,9 @@ local sync
   ->
 Aristotle task breakdown
   ->
-terminal reports for updates, tasks, and course prep
+terminal reports
+  ->
+publish selected tasks to external apps
 ```
 
 That makes it fit well inside:
@@ -44,14 +47,37 @@ That makes it fit well inside:
 - `Claude Code`
 - a normal terminal session
 
+## Supported integrations
+
+Core source:
+
+- `Canvas`
+
+Calendars:
+
+- `Google Calendar`
+- `Outlook Calendar` via Microsoft Graph
+
+Task apps:
+
+- `Google Tasks`
+- `Trello`
+- `Todoist`
+- `Microsoft To Do`
+
+Notes / workspace:
+
+- `Notion`
+
 ## What it does today
 
 - connect to Canvas with a personal access token
 - preview upcoming assignments
-- sync assignments into local state
+- sync assignments into local Aristotle state
 - break assignments into actionable tasks and outlines
 - print a plain-text updates report
 - print a course-specific prep report
+- publish an Aristotle task into external apps with `from-task`
 - keep all generated state on your machine
 
 ## Quick start
@@ -61,7 +87,7 @@ npm install
 cp .env.example .env
 ```
 
-Fill in:
+Minimum required for the Canvas workflow:
 
 - `CANVAS_BASE_URL`
 - `CANVAS_ACCESS_TOKEN`
@@ -88,39 +114,115 @@ Example task update:
 npm run task -- --id <task_id> --status done
 ```
 
+## Publish a task into other apps
+
+Once Aristotle has local tasks, you can push a task into the apps you actually use.
+
+Examples:
+
+```bash
+npm run trello:from-task -- --id <task_id> --dry-run
+npm run todoist:from-task -- --id <task_id> --dry-run
+npm run notion:from-task -- --id <task_id> --dry-run
+npm run google-tasks:from-task -- --id <task_id> --dry-run
+npm run microsoft:todo-from-task -- --id <task_id> --dry-run
+npm run google:from-task -- --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+npm run microsoft:calendar-from-task -- --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+```
+
+For calendars, `from-task` creates a study block. For task and notes apps, `from-task` publishes the Aristotle task directly.
+
 ## Main commands
 
-- `npm run canvas:profile`: verify Canvas auth
-- `npm run canvas:preview`: preview upcoming Canvas assignments
-- `npm run canvas:sync`: fetch Canvas assignments and rebuild local Aristotle state
-- `npm run updates -- --days 7`: print a plain-text report of what matters next
-- `npm run prep -- --course "ECE 3510"`: print a course-specific attack order
-- `npm run courses`: list tracked courses and workload counts
-- `npm run tasks`: list active tasks
-- `npm run task -- --id <task_id> --status in_progress`: update task status
-- `npm run intake -- --interactive --sync`: add a manual assignment
-- `npm run state`: print the saved local state
-- `npm run demo`: seed a sample assignment and print the report
+Canvas + Aristotle:
 
-## Local-first behavior
+- `npm run canvas:profile`
+- `npm run canvas:preview`
+- `npm run canvas:sync`
+- `npm run updates -- --days 7`
+- `npm run prep -- --course "ECE 3510"`
+- `npm run courses`
+- `npm run tasks`
+- `npm run task -- --id <task_id> --status in_progress`
+- `npm run intake -- --interactive --sync`
+- `npm run state`
+
+Google Calendar:
+
+- `npm run google:auth`
+- `npm run google:preview`
+- `npm run google:create`
+- `npm run google:from-task`
+
+Google Tasks:
+
+- `npm run google-tasks:auth`
+- `npm run google-tasks:lists`
+- `npm run google-tasks:preview`
+- `npm run google-tasks:create`
+- `npm run google-tasks:from-task`
+
+Trello:
+
+- `npm run trello:profile`
+- `npm run trello:preview`
+- `npm run trello:create`
+- `npm run trello:from-task`
+
+Todoist:
+
+- `npm run todoist:profile`
+- `npm run todoist:projects`
+- `npm run todoist:preview`
+- `npm run todoist:create`
+- `npm run todoist:from-task`
+
+Notion:
+
+- `npm run notion:profile`
+- `npm run notion:preview`
+- `npm run notion:create`
+- `npm run notion:from-task`
+
+Microsoft Graph:
+
+- `npm run microsoft:profile`
+- `npm run microsoft:calendar-preview`
+- `npm run microsoft:calendar-create`
+- `npm run microsoft:calendar-from-task`
+- `npm run microsoft:todo-lists`
+- `npm run microsoft:todo-preview`
+- `npm run microsoft:todo-create`
+- `npm run microsoft:todo-from-task`
+
+## Configuration
+
+The repo is still local-first:
 
 - data is stored in `aristotle-data/` by default
 - secrets stay in your local `.env`
 - no hosted backend is required
-- the repo includes GitHub Actions CI, but your actual assignment data stays local
 
 Files written locally:
 
 - `state.json`
 - `latest-report.txt`
+- Google OAuth token files if you enable Google Calendar or Google Tasks
 
-Override the default path with `ARISTOTLE_DATA_DIR` if you want.
+Override the default data path with `ARISTOTLE_DATA_DIR` if you want.
+
+## Integration notes
+
+- `Google Calendar` and `Google Tasks` use local OAuth credentials plus local token files.
+- `Trello`, `Todoist`, `Notion`, and `Microsoft Graph` use API tokens in `.env`.
+- `Notion` expects a parent page ID for page creation.
+- `Microsoft Graph` expects a bearer token with the calendar and/or To Do scopes you need.
 
 ## CLI v1 and extension v2
 
-This repo is intentionally focused on the CLI first. The product direction is:
+This repo is still intentionally focused on the CLI first. The product direction is:
 
-- `CLI v1`: terminal-first Canvas copilot
+- `CLI v1`: terminal-first Canvas + integration assistant
 - `Chrome extension v2`: optional in-browser helper for Canvas pages
 
 See [docs/product-spec.md](docs/product-spec.md).

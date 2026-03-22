@@ -9,6 +9,7 @@ The key idea is not "another student dashboard." It is:
 - pull real course data from Canvas
 - compress it into a short actionable plan
 - keep the output in plain text so it fits inside `Codex`, `Claude Code`, and shell workflows
+- publish that plan into the apps students already use
 
 ## Why not a dashboard
 
@@ -20,7 +21,8 @@ For the target user, the better workflow is:
 2. sync Canvas
 3. ask what matters next
 4. get a short answer
-5. keep moving
+5. optionally push the result into Calendar, Trello, Todoist, or Notion
+6. keep moving
 
 That is why the main product surface is CLI-first.
 
@@ -34,6 +36,7 @@ Ship the narrowest version that is clearly useful:
 - assignment breakdowns
 - course-specific prep
 - task tracking
+- cross-app publishing
 
 ### Primary user
 
@@ -56,19 +59,47 @@ A busy student who:
 - `npm run task -- --id <task_id> --status done`
 - `npm run intake -- --interactive --sync`
 
+### Integration commands
+
+Calendars:
+
+- `npm run google:from-task`
+- `npm run microsoft:calendar-from-task`
+
+Task managers:
+
+- `npm run google-tasks:from-task`
+- `npm run trello:from-task`
+- `npm run todoist:from-task`
+- `npm run microsoft:todo-from-task`
+
+Notes workspace:
+
+- `npm run notion:from-task`
+
 ### Outputs
 
-- `state.json` for local state
+- `state.json` for local Aristotle state
 - `latest-report.txt` for the most recent terminal summary
-- plain-text reports that can be pasted directly into AI tools
+- plain-text payloads and dry runs that can be inspected before publishing
 
 ### Non-goals for v1
 
 - hosted backend
 - social features
-- full calendar system
 - visual dashboard
 - browser UI as the main experience
+- managing every app category under the sun
+
+## Integration strategy
+
+The stack is intentionally opinionated:
+
+- `Canvas` is the source of academic truth
+- `Aristotle` owns breakdown and prioritization
+- external apps are publishing targets, not the primary brain
+
+That keeps the product from turning into a generic life OS clone.
 
 ## Chrome extension v2
 
@@ -84,13 +115,14 @@ Its job is not to replace the CLI. Its job is to make Canvas pages themselves sm
 - module page: summarize what matters in this module
 - announcements page: extract exam details or important changes
 - grades page: flag high-risk courses or missing items
+- one-click "send this assignment to Aristotle"
 
 ### Good v2 features
 
 - "Summarize this assignment"
 - "Turn this page into Aristotle tasks"
 - "Extract exam date, room, and allowed materials"
-- "Send this assignment to local Aristotle state"
+- "Create a study block from this assignment"
 
 ### Non-goals for v2
 
@@ -100,5 +132,5 @@ Its job is not to replace the CLI. Its job is to make Canvas pages themselves sm
 
 ## Roadmap summary
 
-- `v1`: terminal-first Aristotle CLI
+- `v1`: terminal-first Aristotle CLI with publishing integrations
 - `v2`: optional Chrome extension for page-level Canvas actions
