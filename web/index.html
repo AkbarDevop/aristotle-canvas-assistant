@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aristotle Canvas Assistant</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="atmosphere"></div>
+    <main class="shell">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Aristotle Canvas Assistant</p>
+          <h1>Canvas-first command center for your coursework.</h1>
+          <p class="intro">
+            Canvas provides the deadlines. Aristotle breaks them down, Napoleon prioritizes the work,
+            and Caesar gives you the short brief.
+          </p>
+        </div>
+        <div class="hero-actions">
+          <button id="refreshButton" class="action action-secondary">Refresh view</button>
+          <button id="syncButton" class="action action-primary">Sync Canvas</button>
+          <p id="statusLine" class="status-line">Loading Aristotle...</p>
+        </div>
+      </section>
+
+      <section id="metrics" class="metrics" aria-label="Aristotle snapshot"></section>
+
+      <section class="ops-grid">
+        <article class="panel intake-panel">
+          <div class="panel-head">
+            <p class="panel-kicker">Residency intake</p>
+            <h2>Add work without the CLI</h2>
+          </div>
+          <form id="intakeForm" class="intake-form">
+            <label>
+              <span>Course</span>
+              <input id="courseInput" name="course" type="text" placeholder="ECE 3830" required />
+            </label>
+            <label>
+              <span>Title</span>
+              <input id="titleInput" name="title" type="text" placeholder="Assignment 11" required />
+            </label>
+            <label>
+              <span>Due</span>
+              <input id="dueInput" name="dueAt" type="datetime-local" required />
+            </label>
+            <label>
+              <span>Hours</span>
+              <input id="hoursInput" name="effortHours" type="number" min="0.5" step="0.5" value="1" required />
+            </label>
+            <label class="full">
+              <span>Deliverable</span>
+              <input id="deliverableInput" name="deliverable" type="text" placeholder="PDF upload, quiz, reflection, lab report" required />
+            </label>
+            <label class="full">
+              <span>Summary</span>
+              <textarea id="summaryInput" name="summary" rows="4" placeholder="What needs to get done?" required></textarea>
+            </label>
+            <label class="full">
+              <span>Source link</span>
+              <input id="sourceLinkInput" name="sourceLink" type="url" placeholder="https://canvas..." />
+            </label>
+            <div class="form-actions full">
+              <button id="intakeButton" type="submit" class="action action-primary">Add to Aristotle</button>
+              <p id="intakeStatus" class="status-line">Assignments added here are processed immediately.</p>
+            </div>
+          </form>
+        </article>
+
+        <article class="panel pulse-panel">
+          <div class="panel-head">
+            <p class="panel-kicker">System pulse</p>
+            <h2>Recent runs</h2>
+          </div>
+          <div id="runsList" class="mini-stack"></div>
+        </article>
+      </section>
+
+      <section class="layout-grid">
+        <article class="panel focus-panel">
+          <div class="panel-head">
+            <p class="panel-kicker">What to do first</p>
+            <h2>Focus now</h2>
+          </div>
+          <div id="focusList" class="task-stack"></div>
+        </article>
+
+        <article class="panel side-panel">
+          <div class="panel-head">
+            <p class="panel-kicker">Today</p>
+            <h2>Commitments</h2>
+          </div>
+          <div id="commitmentsList" class="mini-stack"></div>
+          <div class="panel-divider"></div>
+          <div class="panel-head compact">
+            <p class="panel-kicker">Risk watch</p>
+          </div>
+          <div id="alertsList" class="mini-stack"></div>
+        </article>
+      </section>
+
+      <section class="timeline-grid">
+        <article class="panel">
+          <div class="panel-head compact">
+            <p class="panel-kicker">Queue</p>
+            <h2>Next up</h2>
+          </div>
+          <div id="nextUpList" class="task-stack compact-stack"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head compact">
+            <p class="panel-kicker">Calendar</p>
+            <h2>Today</h2>
+          </div>
+          <div id="todayBucket" class="mini-stack"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head compact">
+            <p class="panel-kicker">Near horizon</p>
+            <h2>Tomorrow</h2>
+          </div>
+          <div id="tomorrowBucket" class="mini-stack"></div>
+        </article>
+        <article class="panel">
+          <div class="panel-head compact">
+            <p class="panel-kicker">This week</p>
+            <h2>Later this week</h2>
+          </div>
+          <div id="weekBucket" class="mini-stack"></div>
+        </article>
+      </section>
+
+      <section class="bottom-grid">
+        <article class="panel span-two">
+          <div class="panel-head">
+            <p class="panel-kicker">Live task board</p>
+            <h2>Active tasks</h2>
+          </div>
+          <div class="task-toolbar">
+            <div id="viewFilters" class="filter-pills" aria-label="Task views">
+              <button class="filter-pill" data-view="all">All active</button>
+              <button class="filter-pill" data-view="university">School</button>
+              <button class="filter-pill" data-view="today">Due today</button>
+              <button class="filter-pill" data-view="overdue">Overdue</button>
+              <button class="filter-pill" data-view="working">Working</button>
+            </div>
+            <div class="toolbar-inputs">
+              <label class="toolbar-field">
+                <span>Course</span>
+                <select id="courseFilter"></select>
+              </label>
+              <label class="toolbar-field toolbar-search">
+                <span>Search</span>
+                <input id="searchInput" type="search" placeholder="Title, notes, course, source..." />
+              </label>
+            </div>
+            <p id="taskBoardStatus" class="status-line">Loading filters...</p>
+          </div>
+          <div id="taskBoard" class="board"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-head">
+            <p class="panel-kicker">Drafts and brief</p>
+            <h2>Latest output</h2>
+          </div>
+          <div id="draftsList" class="mini-stack"></div>
+          <div class="panel-divider"></div>
+          <pre id="briefBox" class="brief-box">Loading brief...</pre>
+        </article>
+      </section>
+    </main>
+
+    <template id="taskCardTemplate">
+      <article class="task-card">
+        <div class="task-card-top">
+          <div>
+            <p class="task-meta"></p>
+            <h3></h3>
+          </div>
+          <span class="urgency-pill"></span>
+        </div>
+        <p class="task-notes"></p>
+        <p class="task-rationale"></p>
+        <div class="source-list"></div>
+        <div class="task-actions">
+          <button data-status="todo" class="status-button">Todo</button>
+          <button data-status="in_progress" class="status-button">Working</button>
+          <button data-status="done" class="status-button">Done</button>
+        </div>
+      </article>
+    </template>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+  </html>
