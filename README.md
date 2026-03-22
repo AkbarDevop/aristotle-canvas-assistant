@@ -4,9 +4,16 @@ Aristotle Canvas Assistant is a local Canvas-first study planner.
 
 It pulls upcoming Canvas assignments, breaks them into smaller tasks, prioritizes the work, and gives you a brief plus a local dashboard you can actually use.
 
-## Why it exists
+![Aristotle Canvas Assistant preview](docs/assets/dashboard-preview.svg)
 
-Canvas shows deadlines. It does not turn them into a plan.
+## Why this is useful
+
+Canvas shows deadlines. It usually does not tell you:
+
+- what to do first
+- how to break an assignment down
+- where workload collisions are forming
+- what your next concrete step should be
 
 This project adds a simple three-agent workflow:
 
@@ -22,8 +29,25 @@ This project adds a simple three-agent workflow:
 - break assignments into actionable tasks
 - generate a brief, dashboard, and today view
 - run a local web dashboard
+- keep all generated state on your machine
 
-## Setup
+## How it works
+
+```text
+Canvas
+  ->
+Canvas connector
+  ->
+Aristotle task breakdown
+  ->
+Napoleon prioritization
+  ->
+Caesar brief
+  ->
+Dashboard + today view + local state
+```
+
+## Quick start
 
 ```bash
 npm install
@@ -42,7 +66,7 @@ npm run canvas:profile
 npm run canvas:preview
 ```
 
-## Main Commands
+## Main commands
 
 ```bash
 npm run canvas:sync
@@ -61,17 +85,42 @@ More commands:
 - `npm run daemon -- --interval 300`: resync Canvas every 5 minutes
 - `npm run state`: print the saved local state
 
-## Local Data
+## Local-first behavior
 
-The app writes its state to `aristotle-data/` by default:
+- data is stored in `aristotle-data/` by default
+- secrets stay in your local `.env`
+- no hosted backend is required
+- the repo includes GitHub Actions CI, but your assignment data stays local
+
+Files written locally:
 
 - `state.json`
 - `latest-brief.txt`
 - `latest-dashboard.txt`
 - `latest-today.txt`
 
-Override that path with `ARISTOTLE_DATA_DIR` if you want.
+Override the default path with `ARISTOTLE_DATA_DIR` if you want.
 
-## Quick Start
+## Demo mode
+
+If you want to test the UI before connecting a real Canvas account:
+
+```bash
+npm run demo
+npm run web
+```
+
+## Testing
+
+```bash
+npm run check
+npm run test
+```
+
+## License
+
+[MIT](LICENSE)
+
+## Quick start doc
 
 See [docs/student-quickstart.md](docs/student-quickstart.md) for the shortest path from Canvas token to running dashboard.

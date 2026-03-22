@@ -3,6 +3,23 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Canvas-first study planning assistant powered by Aristotle, Napoleon, and Caesar.",
+  "license": "MIT",
+  "author": "Akbar",
+  "homepage": "https://github.com/AkbarDevop/aristotle-canvas-assistant#readme",
+  "bugs": {
+    "url": "https://github.com/AkbarDevop/aristotle-canvas-assistant/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AkbarDevop/aristotle-canvas-assistant.git"
+  },
+  "keywords": [
+    "canvas",
+    "student-productivity",
+    "study-planner",
+    "local-first",
+    "typescript"
+  ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",

@@ -1,0 +1,133 @@
+<svg width="1280" height="860" viewBox="0 0 1280 860" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1280" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0E1620"/>
+      <stop offset="1" stop-color="#081018"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(190 120) rotate(30) scale(300 240)">
+      <stop stop-color="#C89A45" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#C89A45" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1110 120) rotate(120) scale(260 220)">
+      <stop stop-color="#315B52" stop-opacity="0.34"/>
+      <stop offset="1" stop-color="#315B52" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#F5EEE2" stop-opacity="0.96"/>
+      <stop offset="1" stop-color="#EDE2CF" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#C89A45"/>
+      <stop offset="1" stop-color="#DCB36B"/>
+    </linearGradient>
+    <filter id="shadow" x="0" y="0" width="1400" height="980" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="30" flood-color="#010910" flood-opacity="0.24"/>
+    </filter>
+  </defs>
+
+  <rect width="1280" height="860" fill="url(#bg)"/>
+  <rect width="1280" height="860" fill="url(#glow1)"/>
+  <rect width="1280" height="860" fill="url(#glow2)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="44" y="36" width="1192" height="170" rx="30" fill="url(#paper)"/>
+    <rect x="44" y="226" width="1192" height="96" rx="24" fill="#F2E8D7" fill-opacity="0.88"/>
+    <rect x="44" y="342" width="760" height="220" rx="24" fill="#F5EEE2" fill-opacity="0.9"/>
+    <rect x="824" y="342" width="412" height="220" rx="24" fill="#F5EEE2" fill-opacity="0.9"/>
+    <rect x="44" y="582" width="1192" height="234" rx="24" fill="#F5EEE2" fill-opacity="0.9"/>
+  </g>
+
+  <text x="84" y="80" fill="#9F5A32" font-family="Avenir Next, Segoe UI, sans-serif" font-size="18" letter-spacing="3">ARISTOTLE CANVAS ASSISTANT</text>
+  <text x="84" y="138" fill="#12202E" font-family="Iowan Old Style, Palatino Linotype, serif" font-size="52" font-weight="600">Canvas-first command center</text>
+  <text x="84" y="188" fill="#556779" font-family="Avenir Next, Segoe UI, sans-serif" font-size="22">Pull assignments from Canvas, break them into tasks, prioritize them, and ship a clear brief.</text>
+
+  <rect x="924" y="72" width="252" height="54" rx="27" fill="url(#gold)"/>
+  <text x="998" y="106" fill="#201507" font-family="Avenir Next, Segoe UI, sans-serif" font-size="20" font-weight="700">Sync Canvas</text>
+  <rect x="924" y="138" width="252" height="54" rx="27" fill="#12202E" fill-opacity="0.08"/>
+  <text x="995" y="172" fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="20" font-weight="600">Refresh view</text>
+
+  <g fill="#12202E" font-family="Iowan Old Style, Palatino Linotype, serif" font-size="30" font-weight="600">
+    <text x="84" y="286">Snapshot</text>
+    <text x="84" y="390">Focus now</text>
+    <text x="864" y="390">Recent runs</text>
+    <text x="84" y="628">Active tasks</text>
+  </g>
+
+  <g fill="#556779" font-family="Avenir Next, Segoe UI, sans-serif" font-size="14" letter-spacing="2">
+    <text x="84" y="262">SYSTEM PULSE</text>
+    <text x="84" y="366">WHAT TO DO FIRST</text>
+    <text x="864" y="366">PIPELINE TRACE</text>
+    <text x="84" y="604">LIVE TASK BOARD</text>
+  </g>
+
+  <g>
+    <rect x="84" y="250" width="174" height="52" rx="16" fill="#FFF8ED"/>
+    <rect x="274" y="250" width="174" height="52" rx="16" fill="#FFF8ED"/>
+    <rect x="464" y="250" width="174" height="52" rx="16" fill="#FFF8ED"/>
+    <rect x="654" y="250" width="174" height="52" rx="16" fill="#FFF8ED"/>
+    <rect x="844" y="250" width="174" height="52" rx="16" fill="#FFF8ED"/>
+    <rect x="1034" y="250" width="162" height="52" rx="16" fill="#FFF8ED"/>
+
+    <g fill="#556779" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13">
+      <text x="104" y="272">Active tasks</text>
+      <text x="294" y="272">In progress</text>
+      <text x="484" y="272">University</text>
+      <text x="674" y="272">Planning</text>
+      <text x="864" y="272">Alerts</text>
+      <text x="1054" y="272">Drafts</text>
+    </g>
+    <g fill="#12202E" font-family="Iowan Old Style, Palatino Linotype, serif" font-size="28" font-weight="600">
+      <text x="104" y="295">12</text>
+      <text x="294" y="295">3</text>
+      <text x="484" y="295">9</text>
+      <text x="674" y="295">3</text>
+      <text x="864" y="295">2</text>
+      <text x="1054" y="295">4</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="84" y="414" width="680" height="56" rx="16" fill="#FFF8ED"/>
+    <rect x="84" y="482" width="680" height="56" rx="16" fill="#FFF8ED"/>
+    <g fill="#556779" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" letter-spacing="1.6">
+      <text x="108" y="438">UNIVERSITY • CANVAS • DUE TODAY</text>
+      <text x="108" y="506">UNIVERSITY • CANVAS • DUE TOMORROW</text>
+    </g>
+    <g fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="22" font-weight="600">
+      <text x="108" y="461">Prepare for ECE 3510 exam practice set</text>
+      <text x="108" y="529">Finish CHEM stoichiometry review quiz</text>
+    </g>
+    <rect x="602" y="426" width="128" height="32" rx="16" fill="#C89A45" fill-opacity="0.18"/>
+    <text x="631" y="447" fill="#9F5A32" font-family="Avenir Next, Segoe UI, sans-serif" font-size="14" font-weight="700">Due today</text>
+    <rect x="588" y="494" width="142" height="32" rx="16" fill="#315B52" fill-opacity="0.14"/>
+    <text x="616" y="515" fill="#315B52" font-family="Avenir Next, Segoe UI, sans-serif" font-size="14" font-weight="700">Due tomorrow</text>
+  </g>
+
+  <g>
+    <rect x="864" y="414" width="332" height="40" rx="12" fill="#FFF8ED"/>
+    <rect x="864" y="466" width="332" height="40" rx="12" fill="#FFF8ED"/>
+    <rect x="864" y="518" width="332" height="40" rx="12" fill="#FFF8ED"/>
+    <g fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="16" font-weight="600">
+      <text x="888" y="439">Canvas: 8 assignments fetched</text>
+      <text x="888" y="491">Aristotle: 12 task updates</text>
+      <text x="888" y="543">Napoleon: 2 alerts generated</text>
+    </g>
+  </g>
+
+  <g>
+    <rect x="84" y="658" width="1112" height="48" rx="14" fill="#FFF8ED"/>
+    <rect x="84" y="718" width="1112" height="48" rx="14" fill="#FFF8ED"/>
+    <g fill="#556779" font-family="Avenir Next, Segoe UI, sans-serif" font-size="14">
+      <text x="108" y="687">School • ECE 3510 • Due today • 2h</text>
+      <text x="108" y="747">School • CHEM 1400 • Due tomorrow • 1h</text>
+    </g>
+    <g fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="19" font-weight="600">
+      <text x="386" y="687">Prepare for ECE 3510 exam practice set</text>
+      <text x="386" y="747">Complete Check-in: Stoichiometry</text>
+    </g>
+    <rect x="1056" y="671" width="104" height="24" rx="12" fill="#12202E" fill-opacity="0.08"/>
+    <rect x="1056" y="731" width="104" height="24" rx="12" fill="#12202E" fill-opacity="0.08"/>
+    <text x="1085" y="688" fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="700">Working</text>
+    <text x="1095" y="748" fill="#12202E" font-family="Avenir Next, Segoe UI, sans-serif" font-size="13" font-weight="700">Todo</text>
+  </g>
+</svg>
