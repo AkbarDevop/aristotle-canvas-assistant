@@ -1,5 +1,5 @@
-import { FileAlexandriaStore } from "../memory/file-store.js";
-import { syncAlexandria, type SyncResult } from "./sync.js";
+import { FileAristotleStore } from "../memory/file-store.js";
+import { syncAristotle, type SyncResult } from "./sync.js";
 import { enqueueAssignment } from "./intake.js";
 import type { AssignmentBrief } from "../types.js";
 import { createId, nowIso } from "../utils.js";
@@ -14,7 +14,7 @@ export interface CanvasSyncResult extends CanvasEnqueueResult {
 }
 
 export async function enqueueCanvasAssignments(
-  store: FileAlexandriaStore,
+  store: FileAristotleStore,
   dataDir: string,
   assignments: AssignmentBrief[],
 ): Promise<CanvasEnqueueResult> {
@@ -22,7 +22,7 @@ export async function enqueueCanvasAssignments(
 
   for (const assignment of assignments) {
     const queuedPath = await enqueueAssignment(dataDir, assignment);
-    await recordEnqueuedAssignment(store, assignment.title, queuedPath, "Canvas");
+    await recordEnqueuedAssignment(store, assignment, queuedPath, "Canvas");
     enqueuedCount += 1;
   }
 
@@ -30,12 +30,12 @@ export async function enqueueCanvasAssignments(
 }
 
 export async function syncCanvasAssignments(
-  store: FileAlexandriaStore,
+  store: FileAristotleStore,
   dataDir: string,
   assignments: AssignmentBrief[],
 ): Promise<CanvasSyncResult> {
   const enqueueResult = await enqueueCanvasAssignments(store, dataDir, assignments);
-  const pipeline = await syncAlexandria(store, dataDir, {
+  const pipeline = await syncAristotle(store, dataDir, {
     trigger: "sync",
   });
 
@@ -47,8 +47,8 @@ export async function syncCanvasAssignments(
 }
 
 async function recordEnqueuedAssignment(
-  store: FileAlexandriaStore,
-  title: string,
+  store: FileAristotleStore,
+  assignment: AssignmentBrief,
   queuedPath: string,
   actor: string,
 ): Promise<void> {
@@ -57,11 +57,12 @@ async function recordEnqueuedAssignment(
     id: createId("event"),
     type: "intake.enqueued",
     actor,
-    summary: `Queued ${title} for Aristotle intake.`,
+    summary: `Queued ${assignment.title} for Aristotle intake.`,
     createdAt: nowIso(),
     metadata: {
       path: queuedPath,
-      title,
+      title: assignment.title,
+      course: assignment.course,
     },
   });
   await store.save(state);

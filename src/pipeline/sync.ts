@@ -1,25 +1,19 @@
 import { writeFile } from "node:fs/promises";
 
 import { runAristotle } from "../agents/aristotle.js";
-import { runCaesar, renderBrief } from "../agents/caesar.js";
-import { runNapoleon } from "../agents/napoleon.js";
-import { getLatestBriefPath } from "../config.js";
-import { FileAlexandriaStore } from "../memory/file-store.js";
+import { getLatestReportPath } from "../config.js";
+import { FileAristotleStore } from "../memory/file-store.js";
 import type {
-  AlexandriaEvent,
-  AlexandriaEventType,
-  Alert,
-  BriefOrigin,
+  AristotleEvent,
+  AristotleEventType,
   Draft,
-  PlanItem,
   RunLog,
   SourceRecord,
-  StoredBrief,
+  SyncTrigger,
   Task,
 } from "../types.js";
 import { createId, nowIso } from "../utils.js";
-import { writeDashboardFile } from "./dashboard.js";
-import { writeTodayFile } from "./today.js";
+import { renderUpdatesReport } from "./reports.js";
 import {
   archivePendingAssignment,
   failPendingAssignment,
@@ -28,19 +22,19 @@ import {
 } from "./intake.js";
 
 export interface SyncOptions {
-  trigger: BriefOrigin;
+  trigger: SyncTrigger;
   processPending?: boolean;
 }
 
 export interface SyncResult {
   processedCount: number;
   failedCount: number;
-  briefText: string;
+  reportText: string;
   summary: string;
 }
 
-export async function syncAlexandria(
-  store: FileAlexandriaStore,
+export async function syncAristotle(
+  store: FileAristotleStore,
   dataDir: string,
   options: SyncOptions,
 ): Promise<SyncResult> {
@@ -52,14 +46,7 @@ export async function syncAlexandria(
   for (const pending of pendingAssignments) {
     if (!pending.assignment) {
       failedCount += 1;
-      await handlePendingFailure(
-        dataDir,
-        state.alerts,
-        state.events,
-        pending.fileName,
-        pending.filePath,
-        pending.errorMessage ?? "Unknown intake parsing failure.",
-      );
+      await handlePendingFailure(state.events, dataDir, pending.fileName, pending.filePath, pending.errorMessage ?? "Unknown intake parsing failure.");
       continue;
     }
 
@@ -72,12 +59,12 @@ export async function syncAlexandria(
       if (existingSource) {
         refreshAssignmentArtifacts(state, aristotle.source, aristotle.tasks ?? [], aristotle.drafts ?? []);
       } else {
-        pushSource(state.sources, aristotle.source);
-        pushTasks(state.tasks, aristotle.tasks ?? []);
-        pushDrafts(state.drafts, aristotle.drafts ?? []);
+        state.sources.push(aristotle.source);
+        state.tasks.push(...(aristotle.tasks ?? []));
+        state.drafts.unshift(...(aristotle.drafts ?? []));
       }
 
-      state.runs.push(createRun("Aristotle", aristotle.summary));
+      state.runs.push(createRun("aristotle", aristotle.summary));
       state.events.push(
         createEvent(
           "intake.processed",
@@ -88,11 +75,14 @@ export async function syncAlexandria(
           {
             file: pending.fileName,
             title: pending.assignment.title,
+            course: pending.assignment.course,
             mode: existingSource ? "refresh" : "new",
           },
         ),
         createEvent("aristotle.completed", "Aristotle", aristotle.summary, {
           sourceId: aristotle.source.id,
+          course: pending.assignment.course,
+          assignmentTitle: pending.assignment.title,
         }),
       );
       await archivePendingAssignment(dataDir, pending);
@@ -100,98 +90,56 @@ export async function syncAlexandria(
     } catch (error) {
       failedCount += 1;
       const message = error instanceof Error ? error.message : "Unknown intake failure.";
-      await handlePendingFailure(dataDir, state.alerts, state.events, pending.fileName, pending.filePath, message);
+      await handlePendingFailure(state.events, dataDir, pending.fileName, pending.filePath, message);
     }
   }
 
-  if (state.tasks.length === 0) {
-    const idleMessage =
-      "Aristotle has no tasks yet. Use `npm run intake -- --file examples/assignment.json --sync` or `npm run demo` to seed the pipeline.";
-    state.events.push(
-      createEvent("sync.completed", "Scheduler", "Aristotle sync finished with no tasks to plan.", {
-        processed: String(processedCount),
-        failed: String(failedCount),
-        trigger: options.trigger,
-      }),
-    );
-    await writeFile(getLatestBriefPath(dataDir), idleMessage);
-    await writeDashboardFile(dataDir, state);
-    await writeTodayFile(dataDir, state);
-    await store.save(trimState(state));
+  const summary =
+    state.tasks.length === 0
+      ? `No tasks available. ${processedCount} intake item(s) processed, ${failedCount} failed.`
+      : `Processed ${processedCount} intake item(s) with ${failedCount} failure(s).`;
 
-    return {
-      processedCount,
-      failedCount,
-      briefText: idleMessage,
-      summary: `No tasks available. ${processedCount} intake item(s) processed, ${failedCount} failed.`,
-    };
-  }
+  const reportText =
+    state.tasks.length === 0
+      ? "Aristotle has no tasks yet. Run `npm run canvas:sync` or `npm run intake -- --interactive --sync` to seed the workspace."
+      : renderUpdatesReport(state);
 
-  const napoleon = runNapoleon(state.tasks);
-  state.plan = napoleon.plan ?? [];
-  state.alerts = mergeAlerts(state.alerts, napoleon.alerts ?? []);
-  state.runs.push(createRun("Napoleon", napoleon.summary));
+  state.runs.push(createRun("sync", summary));
   state.events.push(
-    createEvent("napoleon.completed", "Napoleon", napoleon.summary, {
-      plannedItems: String(state.plan.length),
-      alerts: String(state.alerts.length),
+    createEvent("sync.completed", "Sync", `Aristotle sync finished. ${processedCount} intake item(s) processed, ${failedCount} failed.`, {
+      processed: String(processedCount),
+      failed: String(failedCount),
+      trigger: options.trigger,
     }),
   );
 
-  const caesar = runCaesar({
-    tasks: state.tasks,
-    plan: state.plan,
-    drafts: state.drafts,
-    alerts: state.alerts,
-  });
-  const briefText = renderBrief(caesar.brief);
-  state.briefs.unshift(createStoredBrief(caesar.brief.headline, briefText, options.trigger));
-  state.runs.push(createRun("Caesar", caesar.summary));
-  state.events.push(
-    createEvent("caesar.completed", "Caesar", caesar.summary, {
-      headline: caesar.brief.headline,
-    }),
-    createEvent(
-      "sync.completed",
-      "Scheduler",
-      `Aristotle sync finished. ${processedCount} intake item(s) processed, ${failedCount} failed.`,
-      {
-        processed: String(processedCount),
-        failed: String(failedCount),
-        trigger: options.trigger,
-      },
-    ),
-  );
-
-  await writeFile(getLatestBriefPath(dataDir), briefText);
-  await writeDashboardFile(dataDir, state);
-  await writeTodayFile(dataDir, state);
+  await writeFile(getLatestReportPath(dataDir), reportText);
   await store.save(trimState(state));
 
   return {
     processedCount,
     failedCount,
-    briefText,
-    summary: `Processed ${processedCount} intake item(s) with ${failedCount} failure(s).`,
+    reportText,
+    summary,
   };
 }
 
-function createRun(agent: string, summary: string): RunLog {
+function createRun(step: string, summary: string): RunLog {
   return {
     id: createId("run"),
-    agent,
+    step,
     summary,
     createdAt: nowIso(),
   };
 }
 
 function createEvent(
-  type: AlexandriaEventType,
+  type: AristotleEventType,
   actor: string,
   summary: string,
   metadata?: Record<string, string>,
-): AlexandriaEvent {
-  const event: AlexandriaEvent = {
+): AristotleEvent {
+  const event: AristotleEvent = {
     id: createId("event"),
     type,
     actor,
@@ -204,32 +152,6 @@ function createEvent(
   }
 
   return event;
-}
-
-function createStoredBrief(headline: string, body: string, origin: BriefOrigin): StoredBrief {
-  return {
-    id: createId("brief"),
-    headline,
-    body,
-    createdAt: nowIso(),
-    origin,
-  };
-}
-
-function pushSource(collection: SourceRecord[], source: SourceRecord): void {
-  collection.push(source);
-}
-
-function pushTasks(collection: Task[], tasks: Task[]): void {
-  collection.push(...tasks);
-}
-
-function pushDrafts(collection: Draft[], drafts: Draft[]): void {
-  collection.unshift(...drafts);
-}
-
-function mergeAlerts(existing: Alert[], latest: Alert[]): Alert[] {
-  return latest.length > 0 ? latest : existing.filter((alert) => alert.severity === "critical");
 }
 
 function findExistingAssignmentSource(
@@ -245,24 +167,17 @@ function findExistingAssignmentSource(
       return true;
     }
 
-    return source.title === `${assignment.course}: ${assignment.title}`;
+    return source.course === assignment.course && source.assignmentTitle === assignment.title;
   });
 }
 
 async function handlePendingFailure(
+  events: AristotleEvent[],
   dataDir: string,
-  alerts: Alert[],
-  events: AlexandriaEvent[],
   fileName: string,
   filePath: string,
   message: string,
 ): Promise<void> {
-  alerts.push({
-    id: createId("alert"),
-    severity: "critical",
-    message: `Aristotle failed to process ${fileName}: ${message}`,
-    createdAt: nowIso(),
-  });
   events.push(
     createEvent("intake.failed", "Intake", `Failed to process ${fileName}.`, {
       file: fileName,
@@ -283,17 +198,12 @@ function trimState(state: {
   sources: SourceRecord[];
   tasks: Task[];
   drafts: Draft[];
-  alerts: Alert[];
-  plan: PlanItem[];
   runs: RunLog[];
-  events: AlexandriaEvent[];
-  briefs: StoredBrief[];
+  events: AristotleEvent[];
 }): typeof state {
   state.runs = trimItemsByCreatedAt(state.runs, 200);
   state.events = trimItemsByCreatedAt(state.events, 200);
-  state.briefs = trimItemsByCreatedAt(state.briefs, 30);
   state.drafts = trimItemsByCreatedAt(state.drafts, 50);
-  state.alerts = trimItemsByCreatedAt(state.alerts, 50);
   return state;
 }
 

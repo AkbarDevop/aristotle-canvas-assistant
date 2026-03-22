@@ -1,44 +1,19 @@
-import type { AlexandriaState, AssignmentBrief } from "./types.js";
-import { FileAlexandriaStore } from "./memory/file-store.js";
-import { writeDashboardFile } from "./pipeline/dashboard.js";
+import type { AristotleState, AssignmentBrief } from "./types.js";
+import { FileAristotleStore } from "./memory/file-store.js";
 import { enqueueAssignment } from "./pipeline/intake.js";
-import { syncAlexandria } from "./pipeline/sync.js";
-import { writeTodayFile } from "./pipeline/today.js";
+import { syncAristotle } from "./pipeline/sync.js";
 
-export async function runDemo(store: FileAlexandriaStore, dataDir: string): Promise<string> {
+export async function runDemo(store: FileAristotleStore, dataDir: string): Promise<string> {
   const assignment = sampleAssignment();
   await enqueueAssignment(dataDir, assignment);
-  const result = await syncAlexandria(store, dataDir, {
+  const result = await syncAristotle(store, dataDir, {
     trigger: "demo",
   });
-  return result.briefText;
+  return result.reportText;
 }
 
-export async function buildCurrentBrief(store: FileAlexandriaStore, dataDir: string): Promise<string> {
-  const result = await syncAlexandria(store, dataDir, {
-    trigger: "brief",
-  });
-  return result.briefText;
-}
-
-export async function readState(store: FileAlexandriaStore): Promise<AlexandriaState> {
+export async function readState(store: FileAristotleStore): Promise<AristotleState> {
   return store.load();
-}
-
-export async function buildDashboard(
-  store: FileAlexandriaStore,
-  dataDir: string,
-): Promise<string> {
-  const state = await store.load();
-  return writeDashboardFile(dataDir, state);
-}
-
-export async function buildTodayView(
-  store: FileAlexandriaStore,
-  dataDir: string,
-): Promise<string> {
-  const state = await store.load();
-  return writeTodayFile(dataDir, state);
 }
 
 function sampleAssignment(): AssignmentBrief {

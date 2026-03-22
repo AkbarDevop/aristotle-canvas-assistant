@@ -36,27 +36,25 @@ That will:
 - fetch upcoming Canvas assignments
 - enqueue them locally
 - run Aristotle on them
-- produce tasks, alerts, and a brief
+- write tasks, drafts, events, and a terminal report
 
-## 5. Review the outputs
+## 5. Review what matters next
 
 ```bash
-npm run dashboard
-npm run today
-npm run web -- --sync
+npm run updates -- --days 7
+npm run courses
+npm run prep -- --course "ECE 3510"
 ```
 
 ## 6. Update tasks as you work
 
 ```bash
 npm run tasks
-npm run task -- --id <task_id> --status in_progress --sync
-npm run task -- --id <task_id> --status done --sync
+npm run task -- --id <task_id> --status in_progress
+npm run task -- --id <task_id> --status done
 ```
 
 ## Files written locally
 
 - `aristotle-data/state.json`
-- `aristotle-data/latest-brief.txt`
-- `aristotle-data/latest-dashboard.txt`
-- `aristotle-data/latest-today.txt`
+- `aristotle-data/latest-report.txt`

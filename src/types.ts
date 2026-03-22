@@ -1,21 +1,21 @@
-export type Domain = "command" | "university" | "planning";
+export type Domain = "university";
 
 export type TaskStatus = "todo" | "in_progress" | "done" | "blocked";
 export type DraftType = "outline" | "brief" | "summary" | "message";
-export type AlertSeverity = "info" | "warning" | "critical";
-export type BriefOrigin = "demo" | "manual" | "sync" | "scheduler" | "brief";
-export type AlexandriaEventType =
+export type SyncTrigger = "demo" | "manual" | "sync" | "report";
+export type AristotleEventType =
   | "intake.enqueued"
   | "intake.processed"
   | "intake.failed"
   | "aristotle.completed"
-  | "napoleon.completed"
-  | "caesar.completed"
-  | "sync.completed";
+  | "sync.completed"
+  | "task.updated";
 
 export interface SourceRecord {
   id: string;
   domain: Domain;
+  course: string;
+  assignmentTitle: string;
   title: string;
   content: string;
   link?: string;
@@ -26,6 +26,8 @@ export interface SourceRecord {
 export interface Task {
   id: string;
   domain: Domain;
+  course: string;
+  assignmentTitle: string;
   title: string;
   notes: string;
   status: TaskStatus;
@@ -41,6 +43,8 @@ export interface Task {
 export interface Draft {
   id: string;
   domain: Domain;
+  course: string;
+  assignmentTitle: string;
   type: DraftType;
   title: string;
   body: string;
@@ -48,55 +52,28 @@ export interface Draft {
   createdAt: string;
 }
 
-export interface Alert {
-  id: string;
-  severity: AlertSeverity;
-  message: string;
-  taskId?: string;
-  createdAt: string;
-}
-
-export interface PlanItem {
-  id: string;
-  label: string;
-  taskId: string;
-  plannedFor: "today" | "this_week" | "later";
-  rationale: string;
-}
-
 export interface RunLog {
   id: string;
-  agent: string;
+  step: string;
   summary: string;
   createdAt: string;
 }
 
-export interface AlexandriaEvent {
+export interface AristotleEvent {
   id: string;
-  type: AlexandriaEventType;
+  type: AristotleEventType;
   actor: string;
   summary: string;
   createdAt: string;
   metadata?: Record<string, string>;
 }
 
-export interface StoredBrief {
-  id: string;
-  headline: string;
-  body: string;
-  createdAt: string;
-  origin: BriefOrigin;
-}
-
-export interface AlexandriaState {
+export interface AristotleState {
   sources: SourceRecord[];
   tasks: Task[];
   drafts: Draft[];
-  alerts: Alert[];
-  plan: PlanItem[];
   runs: RunLog[];
-  events: AlexandriaEvent[];
-  briefs: StoredBrief[];
+  events: AristotleEvent[];
 }
 
 export interface AssignmentBrief {
@@ -122,13 +99,4 @@ export interface AgentResult {
   summary: string;
   tasks?: Task[];
   drafts?: Draft[];
-  alerts?: Alert[];
-  plan?: PlanItem[];
-}
-
-export interface DailyBrief {
-  headline: string;
-  topFocus: string[];
-  risks: string[];
-  notes: string[];
 }

@@ -18,6 +18,8 @@ export function runAristotle(input: AssignmentBrief, options: AristotleOptions =
   const source: SourceRecord = {
     id: options.sourceId ?? createId("src"),
     domain: "university",
+    course: input.course,
+    assignmentTitle: input.title,
     title: `${input.course}: ${input.title}`,
     content: `${input.summary}\nDeliverable: ${input.deliverable}`,
     capturedAt,
@@ -39,7 +41,6 @@ export function runAristotle(input: AssignmentBrief, options: AristotleOptions =
     summary: `${ARISTOTLE_PROFILE.displayName} captured ${input.title} and generated ${tasks.length} task(s)${drafts.length > 0 ? " plus a draft" : ""}.`,
     tasks,
     drafts,
-    alerts: [],
   };
 }
 
@@ -209,6 +210,8 @@ function buildAssignmentDraft(input: AssignmentBrief, sourceId: string, createdA
     return {
       id: createId("draft"),
       domain: "university",
+      course: input.course,
+      assignmentTitle: input.title,
       type: "outline",
       title: `Prep checklist for ${input.title}`,
       body,
@@ -240,6 +243,8 @@ function buildAssignmentDraft(input: AssignmentBrief, sourceId: string, createdA
   return {
     id: createId("draft"),
     domain: "university",
+    course: input.course,
+    assignmentTitle: input.title,
     type: "outline",
     title: `Outline for ${input.title}`,
     body,
@@ -272,6 +277,8 @@ function createTask({
   const task: Task = {
     id: createId("task"),
     domain: "university",
+    course: input.course,
+    assignmentTitle: input.title,
     title,
     notes,
     status: "todo",

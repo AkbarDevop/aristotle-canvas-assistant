@@ -4,17 +4,19 @@ import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { FileAlexandriaStore } from "../src/memory/file-store.js";
+import { FileAristotleStore } from "../src/memory/file-store.js";
 import { updateTaskStatus } from "../src/pipeline/tasks.js";
 
 test("task updates persist status changes", async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "alexandria-tasks-"));
-  const store = new FileAlexandriaStore(dataDir);
+  const store = new FileAristotleStore(dataDir);
   const state = await store.load();
 
   state.tasks.push({
     id: "task_demo",
     domain: "university",
+    course: "ENG 201",
+    assignmentTitle: "Finish summary",
     title: "Finish summary",
     notes: "Demo",
     status: "todo",

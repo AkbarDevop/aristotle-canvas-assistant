@@ -1,8 +1,8 @@
-import { FileAlexandriaStore } from "../memory/file-store.js";
-import type { AlexandriaState, Task, TaskStatus } from "../types.js";
-import { formatDate, sortByUrgency } from "../utils.js";
+import { FileAristotleStore } from "../memory/file-store.js";
+import type { AristotleState, Task, TaskStatus } from "../types.js";
+import { createId, formatDate, sortByUrgency } from "../utils.js";
 
-export async function listTasks(store: FileAlexandriaStore, includeDone = false): Promise<string> {
+export async function listTasks(store: FileAristotleStore, includeDone = false): Promise<string> {
   const state = await store.load();
   const tasks = sortByUrgency(
     state.tasks.filter((task) => includeDone || task.status !== "done"),
@@ -15,13 +15,13 @@ export async function listTasks(store: FileAlexandriaStore, includeDone = false)
   return tasks
     .map(
       (task) =>
-        `${task.id} | ${task.status.padEnd(11)} | ${task.domain.padEnd(12)} | ${formatDate(task.dueAt)} | ${task.title}`,
+        `${task.id} | ${task.status.padEnd(11)} | ${formatDate(task.dueAt)} | ${task.course.padEnd(20)} | ${task.title}`,
     )
     .join("\n");
 }
 
 export async function updateTaskStatus(
-  store: FileAlexandriaStore,
+  store: FileAristotleStore,
   taskId: string,
   status: TaskStatus,
 ): Promise<Task> {
@@ -40,16 +40,18 @@ export async function updateTaskStatus(
   return task;
 }
 
-function pushTaskEvent(state: AlexandriaState, task: Task, status: TaskStatus): void {
+function pushTaskEvent(state: AristotleState, task: Task, status: TaskStatus): void {
   state.events.push({
-    id: `event_task_${task.id}_${Date.now()}`,
-    type: "sync.completed",
+    id: createId("event"),
+    type: "task.updated",
     actor: "Task",
     summary: `Task ${task.title} marked as ${status}.`,
     createdAt: new Date().toISOString(),
     metadata: {
       taskId: task.id,
       status,
+      course: task.course,
+      assignmentTitle: task.assignmentTitle,
     },
   });
 }

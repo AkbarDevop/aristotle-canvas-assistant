@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" fill="none">
+  <rect width="1280" height="720" rx="28" fill="#0F172A"/>
+  <rect x="32" y="32" width="1216" height="656" rx="20" fill="#111827" stroke="#334155" stroke-width="2"/>
+  <circle cx="76" cy="74" r="10" fill="#FB7185"/>
+  <circle cx="108" cy="74" r="10" fill="#FBBF24"/>
+  <circle cx="140" cy="74" r="10" fill="#34D399"/>
+  <text x="182" y="82" fill="#CBD5E1" font-family="Menlo, Monaco, Consolas, monospace" font-size="24">Aristotle Canvas Assistant</text>
+  <text x="64" y="140" fill="#93C5FD" font-family="Menlo, Monaco, Consolas, monospace" font-size="24">$ npm run canvas:sync</text>
+  <text x="64" y="186" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="20">Canvas fetched 6 upcoming assignment(s) and queued 6 item(s).</text>
+  <text x="64" y="230" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="20">Processed 6 intake item(s) with 0 failure(s).</text>
+  <text x="64" y="292" fill="#A7F3D0" font-family="Menlo, Monaco, Consolas, monospace" font-size="22">Aristotle terminal report</text>
+  <text x="64" y="330" fill="#CBD5E1" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Generated: Mar 22, 2026, 1:12 PM</text>
+  <text x="64" y="360" fill="#CBD5E1" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Courses tracked: 4</text>
+  <text x="64" y="390" fill="#CBD5E1" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">Open tasks: 13</text>
+  <text x="64" y="440" fill="#FDE68A" font-family="Menlo, Monaco, Consolas, monospace" font-size="20">Priority queue (7-day window)</text>
+  <text x="64" y="476" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">1. [todo] Due tomorrow | ECE 3510 | Clarify scope for Homework 3 (1h)</text>
+  <text x="64" y="506" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">2. [todo] Due in 3d | STAT 4710 | Complete HW5 (2h)</text>
+  <text x="64" y="536" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">3. [todo] Due in 4d | ECE 3830 | Prepare for Assignment-12 (1h)</text>
+  <text x="64" y="592" fill="#FCA5A5" font-family="Menlo, Monaco, Consolas, monospace" font-size="20">Recent activity</text>
+  <text x="64" y="628" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">- Mar 22, 2026, 12:58 PM | Queued Homework 3 for Aristotle intake.</text>
+  <text x="64" y="658" fill="#E5E7EB" font-family="Menlo, Monaco, Consolas, monospace" font-size="18">- Mar 22, 2026, 12:58 PM | Aristotle captured Homework 3 and generated 4 task(s) plus a draft.</text>
+</svg>

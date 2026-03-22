@@ -1,57 +1,41 @@
 import { loadAssignmentFromFile, enqueueAssignment, parseAssignmentBrief } from "./pipeline/intake.js";
 import { promptForAssignmentBrief } from "./interactive/intake-wizard.js";
-import { syncAlexandria } from "./pipeline/sync.js";
-import { runScheduler } from "./pipeline/scheduler.js";
+import { syncAristotle } from "./pipeline/sync.js";
 import { listTasks, updateTaskStatus } from "./pipeline/tasks.js";
 import { getCanvasConfig, getDataDir, loadLocalEnv } from "./config.js";
 import { parseArgs, readBooleanFlag, readNumberFlag, readStringFlag } from "./cli.js";
-import { buildCurrentBrief, buildDashboard, buildTodayView, readState, runDemo } from "./demo.js";
-import { FileAlexandriaStore } from "./memory/file-store.js";
+import { readState, runDemo } from "./demo.js";
+import { FileAristotleStore } from "./memory/file-store.js";
 import type { AssignmentBrief, TaskStatus } from "./types.js";
 import { createId, nowIso } from "./utils.js";
 import { CanvasClient } from "./connectors/canvas.js";
 import { syncCanvasAssignments } from "./pipeline/canvas-sync.js";
-import { runAristotleWebServer } from "./web/server.js";
+import { listCourses, renderPrepReport, renderUpdatesReport } from "./pipeline/reports.js";
 
 async function main(): Promise<void> {
   loadLocalEnv();
   const command = process.argv[2] ?? "demo";
   const args = parseArgs(process.argv.slice(3));
   const dataDir = getDataDir();
-  const store = new FileAlexandriaStore(dataDir);
+  const store = new FileAristotleStore(dataDir);
 
   if (command === "demo") {
     console.log(await runDemo(store, dataDir));
     return;
   }
 
-  if (command === "brief") {
-    console.log(await buildCurrentBrief(store, dataDir));
-    return;
-  }
-
-  if (command === "dashboard") {
-    console.log(await buildDashboard(store, dataDir));
-    return;
-  }
-
-  if (command === "today") {
-    console.log(await buildTodayView(store, dataDir));
-    return;
-  }
-
   if (command === "intake") {
     const assignment = await resolveAssignmentInput(args);
     const queuedPath = await enqueueAssignment(dataDir, assignment);
-    await recordEnqueuedAssignment(store, assignment.title, queuedPath);
+    await recordEnqueuedAssignment(store, assignment, queuedPath);
     console.log(`Queued assignment in Aristotle inbox: ${queuedPath}`);
 
     if (readBooleanFlag(args, "sync")) {
-      const result = await syncAlexandria(store, dataDir, {
+      const result = await syncAristotle(store, dataDir, {
         trigger: "manual",
       });
       console.log("");
-      console.log(result.briefText);
+      console.log(result.reportText);
     }
 
     return;
@@ -73,84 +57,57 @@ async function main(): Promise<void> {
     console.log(`Updated ${updatedTask.id}: ${updatedTask.title} -> ${updatedTask.status}`);
 
     if (readBooleanFlag(args, "sync")) {
-      const result = await syncAlexandria(store, dataDir, {
+      const result = await syncAristotle(store, dataDir, {
         trigger: "manual",
         processPending: false,
       });
       console.log("");
-      console.log(result.briefText);
+      console.log(result.reportText);
     }
     return;
   }
 
   if (command === "sync") {
-    const result = await syncAlexandria(store, dataDir, {
+    const result = await syncAristotle(store, dataDir, {
       trigger: "sync",
     });
     console.log(result.summary);
     console.log("");
-    console.log(result.briefText);
+    console.log(result.reportText);
+    return;
+  }
+
+  if (command === "updates") {
+    const state = await readState(store);
+    const course = readStringFlag(args, "course");
+    const days = readNumberFlag(args, "days");
+    const limit = readNumberFlag(args, "limit");
+    console.log(
+      renderUpdatesReport(state, {
+        ...(course ? { course } : {}),
+        ...(days !== undefined ? { days } : {}),
+        ...(limit !== undefined ? { limit } : {}),
+        ...(readBooleanFlag(args, "all") ? { includeDone: true } : {}),
+      }),
+    );
+    return;
+  }
+
+  if (command === "prep") {
+    const state = await readState(store);
+    const course = readStringFlag(args, "course") ?? args.positionals[0];
+    console.log(renderPrepReport(state, course));
+    return;
+  }
+
+  if (command === "courses") {
+    const state = await readState(store);
+    console.log(listCourses(state));
     return;
   }
 
   if (command === "canvas") {
     await runCanvasCommand(args, store, dataDir);
-    return;
-  }
-
-  if (command === "daemon") {
-    const intervalSeconds = readNumberFlag(args, "interval") ?? 300;
-    const ticks = readNumberFlag(args, "ticks");
-    const includeCanvas = !readBooleanFlag(args, "skip-canvas");
-    const canvasLimit = readNumberFlag(args, "canvas-limit") ?? 15;
-    const schedulerOptions = {
-      dataDir,
-      store,
-      intervalSeconds,
-      canvasLimit,
-      includeCanvas,
-    };
-
-    if (includeCanvas) {
-      try {
-        Object.assign(schedulerOptions, { canvasConfig: getCanvasConfig() });
-      } catch {
-        // Canvas is optional for the daemon. Skip if not configured.
-      }
-    }
-
-    if (ticks !== undefined) {
-      Object.assign(schedulerOptions, { ticks });
-    }
-
-    await runScheduler(schedulerOptions);
-    return;
-  }
-
-  if (command === "web") {
-    const port = readNumberFlag(args, "port") ?? 4177;
-    const host = readStringFlag(args, "host") ?? "127.0.0.1";
-    const includeCanvas = !readBooleanFlag(args, "skip-canvas");
-    const canvasLimit = readNumberFlag(args, "canvas-limit") ?? 15;
-    const serverOptions = {
-      dataDir,
-      store,
-      host,
-      port,
-      includeCanvas,
-      canvasLimit,
-      syncOnStart: readBooleanFlag(args, "sync"),
-    };
-
-    if (includeCanvas) {
-      try {
-        Object.assign(serverOptions, { canvasConfig: getCanvasConfig() });
-      } catch {
-        // Canvas is optional for the web dashboard. Skip if not configured.
-      }
-    }
-
-    await runAristotleWebServer(serverOptions);
     return;
   }
 
@@ -160,7 +117,7 @@ async function main(): Promise<void> {
   }
 
   console.error(
-    "Unknown command. Use `demo`, `dashboard`, `today`, `intake`, `tasks`, `task`, `sync`, `canvas`, `brief`, `daemon`, `web`, or `state`.",
+    "Unknown command. Use `demo`, `intake`, `tasks`, `task`, `sync`, `updates`, `prep`, `courses`, `canvas`, or `state`.",
   );
   process.exitCode = 1;
 }
@@ -202,8 +159,8 @@ function isTaskStatus(value: string): value is TaskStatus {
 void main();
 
 async function recordEnqueuedAssignment(
-  store: FileAlexandriaStore,
-  title: string,
+  store: FileAristotleStore,
+  assignment: AssignmentBrief,
   queuedPath: string,
 ): Promise<void> {
   const state = await store.load();
@@ -211,11 +168,12 @@ async function recordEnqueuedAssignment(
     id: createId("event"),
     type: "intake.enqueued",
     actor: "Intake",
-    summary: `Queued ${title} for Aristotle intake.`,
+    summary: `Queued ${assignment.title} for Aristotle intake.`,
     createdAt: nowIso(),
     metadata: {
       path: queuedPath,
-      title,
+      title: assignment.title,
+      course: assignment.course,
     },
   });
   await store.save(state);
@@ -223,7 +181,7 @@ async function recordEnqueuedAssignment(
 
 async function runCanvasCommand(
   args: ReturnType<typeof parseArgs>,
-  store: FileAlexandriaStore,
+  store: FileAristotleStore,
   dataDir: string,
 ): Promise<void> {
   const subcommand = args.positionals[0] ?? "preview";
@@ -274,7 +232,7 @@ async function runCanvasCommand(
     );
     console.log(result.pipeline.summary);
     console.log("");
-    console.log(result.pipeline.briefText);
+    console.log(result.pipeline.reportText);
     return;
   }
 

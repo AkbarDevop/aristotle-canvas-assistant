@@ -4,13 +4,13 @@ import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { FileAlexandriaStore } from "../src/memory/file-store.js";
+import { FileAristotleStore } from "../src/memory/file-store.js";
 import { enqueueAssignment } from "../src/pipeline/intake.js";
-import { syncAlexandria } from "../src/pipeline/sync.js";
+import { syncAristotle } from "../src/pipeline/sync.js";
 
 test("Aristotle skips duplicate external assignments during sync", async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "alexandria-dedupe-"));
-  const store = new FileAlexandriaStore(dataDir);
+  const store = new FileAristotleStore(dataDir);
 
   const assignment = {
     course: "ECE 3830",
@@ -24,10 +24,10 @@ test("Aristotle skips duplicate external assignments during sync", async () => {
   };
 
   await enqueueAssignment(dataDir, assignment);
-  await syncAlexandria(store, dataDir, { trigger: "sync" });
+  await syncAristotle(store, dataDir, { trigger: "sync" });
 
   await enqueueAssignment(dataDir, assignment);
-  await syncAlexandria(store, dataDir, { trigger: "sync" });
+  await syncAristotle(store, dataDir, { trigger: "sync" });
 
   const state = await store.load();
   assert.equal(state.sources.length, 1);
@@ -36,7 +36,7 @@ test("Aristotle skips duplicate external assignments during sync", async () => {
 
 test("Aristotle refreshes existing external assignments when workflow rules change", async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "alexandria-refresh-"));
-  const store = new FileAlexandriaStore(dataDir);
+  const store = new FileAristotleStore(dataDir);
 
   const assignment = {
     course: "CHEM 1400",
@@ -50,9 +50,9 @@ test("Aristotle refreshes existing external assignments when workflow rules chan
   };
 
   await enqueueAssignment(dataDir, assignment);
-  await syncAlexandria(store, dataDir, { trigger: "sync" });
+  await syncAristotle(store, dataDir, { trigger: "sync" });
   await enqueueAssignment(dataDir, assignment);
-  await syncAlexandria(store, dataDir, { trigger: "sync" });
+  await syncAristotle(store, dataDir, { trigger: "sync" });
 
   const state = await store.load();
   assert.equal(state.sources.length, 1);

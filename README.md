@@ -1,51 +1,58 @@
 # Aristotle Canvas Assistant
 
-Aristotle Canvas Assistant is a local Canvas-first study planner.
+Aristotle Canvas Assistant is a terminal-first Canvas copilot for students who already live in `Codex`, `Claude Code`, or a shell.
 
-It pulls upcoming Canvas assignments, breaks them into smaller tasks, prioritizes the work, and gives you a brief plus a local dashboard you can actually use.
+It pulls Canvas assignments, turns them into concrete tasks, keeps local state on your machine, and gives you fast plain-text outputs you can actually use while studying.
 
-![Aristotle Canvas Assistant preview](docs/assets/dashboard-preview.svg)
+![Aristotle terminal preview](docs/assets/terminal-preview.svg)
 
-## Why this is useful
+## Why this exists
 
 Canvas shows deadlines. It usually does not tell you:
 
 - what to do first
 - how to break an assignment down
-- where workload collisions are forming
-- what your next concrete step should be
+- what course is about to collide with another one
+- what to review for a specific class right now
 
-This project adds a simple three-agent workflow:
+Aristotle is the narrower, more useful layer on top:
 
-- `Aristotle`: turns assignments into concrete tasks and prep checklists
-- `Napoleon`: prioritizes what matters now and flags overload
-- `Caesar`: produces the short command brief
+- sync real Canvas assignments
+- break them into steps
+- print a terminal report
+- let you filter by course for targeted prep
 
-## What it does
+## Product shape
 
-- connect to Canvas with a personal access token
-- preview upcoming assignments
-- sync assignments into local state
-- break assignments into actionable tasks
-- generate a brief, dashboard, and today view
-- run a local web dashboard
-- keep all generated state on your machine
+This repo is intentionally not a dashboard app.
 
-## How it works
+The main workflow is:
 
 ```text
 Canvas
   ->
-Canvas connector
+local sync
   ->
 Aristotle task breakdown
   ->
-Napoleon prioritization
-  ->
-Caesar brief
-  ->
-Dashboard + today view + local state
+terminal reports for updates, tasks, and course prep
 ```
+
+That makes it fit well inside:
+
+- `Codex`
+- `Claude Code`
+- a normal terminal session
+
+## What it does today
+
+- connect to Canvas with a personal access token
+- preview upcoming assignments
+- sync assignments into local state
+- break assignments into actionable tasks and outlines
+- print a plain-text updates report
+- print a course-specific prep report
+- keep all generated state on your machine
 
 ## Quick start
 
@@ -54,7 +61,7 @@ npm install
 cp .env.example .env
 ```
 
-Add these values to `.env`:
+Fill in:
 
 - `CANVAS_BASE_URL`
 - `CANVAS_ACCESS_TOKEN`
@@ -66,49 +73,57 @@ npm run canvas:profile
 npm run canvas:preview
 ```
 
-## Main commands
+## Core terminal workflow
 
 ```bash
 npm run canvas:sync
-npm run dashboard
-npm run today
-npm run web -- --sync
+npm run updates -- --days 7
+npm run prep -- --course "ECE 3510"
+npm run tasks
 ```
 
-More commands:
+Example task update:
 
-- `npm run demo`: seed a sample assignment and generate a brief
-- `npm run intake -- --interactive --sync`: add a manual assignment
-- `npm run sync`: process inbox items and rebuild the brief
+```bash
+npm run task -- --id <task_id> --status done
+```
+
+## Main commands
+
+- `npm run canvas:profile`: verify Canvas auth
+- `npm run canvas:preview`: preview upcoming Canvas assignments
+- `npm run canvas:sync`: fetch Canvas assignments and rebuild local Aristotle state
+- `npm run updates -- --days 7`: print a plain-text report of what matters next
+- `npm run prep -- --course "ECE 3510"`: print a course-specific attack order
+- `npm run courses`: list tracked courses and workload counts
 - `npm run tasks`: list active tasks
-- `npm run task -- --id <task_id> --status done --sync`: update a task and refresh the brief
-- `npm run daemon -- --interval 300`: resync Canvas every 5 minutes
+- `npm run task -- --id <task_id> --status in_progress`: update task status
+- `npm run intake -- --interactive --sync`: add a manual assignment
 - `npm run state`: print the saved local state
+- `npm run demo`: seed a sample assignment and print the report
 
 ## Local-first behavior
 
 - data is stored in `aristotle-data/` by default
 - secrets stay in your local `.env`
 - no hosted backend is required
-- the repo includes GitHub Actions CI, but your assignment data stays local
+- the repo includes GitHub Actions CI, but your actual assignment data stays local
 
 Files written locally:
 
 - `state.json`
-- `latest-brief.txt`
-- `latest-dashboard.txt`
-- `latest-today.txt`
+- `latest-report.txt`
 
 Override the default path with `ARISTOTLE_DATA_DIR` if you want.
 
-## Demo mode
+## CLI v1 and extension v2
 
-If you want to test the UI before connecting a real Canvas account:
+This repo is intentionally focused on the CLI first. The product direction is:
 
-```bash
-npm run demo
-npm run web
-```
+- `CLI v1`: terminal-first Canvas copilot
+- `Chrome extension v2`: optional in-browser helper for Canvas pages
+
+See [docs/product-spec.md](docs/product-spec.md).
 
 ## Testing
 
@@ -117,10 +132,11 @@ npm run check
 npm run test
 ```
 
+## Docs
+
+- [Student Quickstart](docs/student-quickstart.md)
+- [Product Spec](docs/product-spec.md)
+
 ## License
 
 [MIT](LICENSE)
-
-## Quick start doc
-
-See [docs/student-quickstart.md](docs/student-quickstart.md) for the shortest path from Canvas token to running dashboard.

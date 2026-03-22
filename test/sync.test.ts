@@ -4,14 +4,14 @@ import { mkdtemp, readFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 
-import { getLatestBriefPath } from "../src/config.js";
-import { FileAlexandriaStore } from "../src/memory/file-store.js";
+import { getLatestReportPath } from "../src/config.js";
+import { FileAristotleStore } from "../src/memory/file-store.js";
 import { enqueueAssignment } from "../src/pipeline/intake.js";
-import { syncAlexandria } from "../src/pipeline/sync.js";
+import { syncAristotle } from "../src/pipeline/sync.js";
 
-test("Aristotle sync processes inbox assignments into tasks, events, and a brief", async () => {
+test("Aristotle sync processes inbox assignments into tasks, events, and a report", async () => {
   const dataDir = await mkdtemp(path.join(os.tmpdir(), "alexandria-"));
-  const store = new FileAlexandriaStore(dataDir);
+  const store = new FileAristotleStore(dataDir);
 
   await enqueueAssignment(dataDir, {
     course: "BIO 210",
@@ -22,16 +22,15 @@ test("Aristotle sync processes inbox assignments into tasks, events, and a brief
     effortHours: 5,
   });
 
-  const result = await syncAlexandria(store, dataDir, {
+  const result = await syncAristotle(store, dataDir, {
     trigger: "manual",
   });
 
   const state = await store.load();
-  const latestBrief = await readFile(getLatestBriefPath(dataDir), "utf8");
+  const latestReport = await readFile(getLatestReportPath(dataDir), "utf8");
 
   assert.equal(result.processedCount, 1);
   assert.equal(state.tasks.length, 4);
   assert.ok(state.events.some((event) => event.type === "aristotle.completed"));
-  assert.ok(state.briefs.length >= 1);
-  assert.match(latestBrief, /Aristotle command brief/);
+  assert.match(latestReport, /Aristotle terminal report/);
 });

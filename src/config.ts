@@ -24,16 +24,8 @@ export function getFailedDir(dataDir = getDataDir()): string {
   return path.join(dataDir, "failed");
 }
 
-export function getLatestBriefPath(dataDir = getDataDir()): string {
-  return path.join(dataDir, "latest-brief.txt");
-}
-
-export function getLatestDashboardPath(dataDir = getDataDir()): string {
-  return path.join(dataDir, "latest-dashboard.txt");
-}
-
-export function getLatestTodayPath(dataDir = getDataDir()): string {
-  return path.join(dataDir, "latest-today.txt");
+export function getLatestReportPath(dataDir = getDataDir()): string {
+  return path.join(dataDir, "latest-report.txt");
 }
 
 export interface CanvasConfig {
