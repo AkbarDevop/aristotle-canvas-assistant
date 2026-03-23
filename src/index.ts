@@ -1,5 +1,6 @@
 import { loadAssignmentFromFile, enqueueAssignment, parseAssignmentBrief } from "./pipeline/intake.js";
 import { promptForAssignmentBrief } from "./interactive/intake-wizard.js";
+import { runSetupWizard } from "./interactive/setup-wizard.js";
 import { syncAristotle } from "./pipeline/sync.js";
 import { listTasks, updateTaskStatus } from "./pipeline/tasks.js";
 import {
@@ -51,6 +52,11 @@ async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(3));
   const dataDir = getDataDir();
   const store = new FileAristotleStore(dataDir);
+
+  if (command === "setup") {
+    await runSetupWizard();
+    return;
+  }
 
   if (command === "demo") {
     console.log(await runDemo(store, dataDir));
@@ -195,7 +201,7 @@ async function main(): Promise<void> {
   }
 
   console.error(
-    "Unknown command. Use `demo`, `intake`, `tasks`, `task`, `sync`, `updates`, `prep`, `courses`, `publish`, `canvas`, `google`, `google-tasks`, `trello`, `todoist`, `notion`, `microsoft`, `telegram`, `generate`, or `state`.",
+    "Unknown command. Use `setup`, `demo`, `intake`, `tasks`, `task`, `sync`, `updates`, `prep`, `courses`, `publish`, `canvas`, `google`, `google-tasks`, `trello`, `todoist`, `notion`, `microsoft`, `telegram`, `generate`, or `state`.",
   );
   process.exitCode = 1;
 }

@@ -31,6 +31,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc --noEmit -p tsconfig.json",
     "skill:install": "bash scripts/install-skill.sh",
+    "setup": "tsx src/index.ts setup",
     "demo": "tsx src/index.ts demo",
     "intake": "tsx src/index.ts intake",
     "sync": "tsx src/index.ts sync",
