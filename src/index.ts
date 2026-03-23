@@ -1102,7 +1102,8 @@ async function runTelegramBot(client: TelegramClient): Promise<void> {
           await client.sendMessage(
             `Hey ${firstName}! I'm Aristotle, your Canvas assistant.\n\n` +
             `Try these commands:\n` +
-            `/workload — what's due this week\n` +
+            `/workload — what's due soon\n` +
+            `/pdf — get assignment PDFs sent here\n` +
             `/courses — your enrolled courses\n` +
             `/help — all commands`,
             chatId,
@@ -1111,11 +1112,13 @@ async function runTelegramBot(client: TelegramClient): Promise<void> {
           await client.sendMessage(
             `Available commands:\n\n` +
             `/start — welcome message\n` +
-            `/workload — upcoming assignments (next 7 days)\n` +
+            `/workload — upcoming assignments\n` +
             `/courses — list your courses\n` +
-            `/due — everything due this week\n` +
+            `/due — everything due soon\n` +
+            `/pdf — get assignment PDFs\n` +
+            `/pdf ece — PDFs for a specific course\n` +
             `/help — this message\n\n` +
-            `Or just ask me anything like "what's due tomorrow?"`,
+            `Or just type naturally: "what's due tomorrow?"`,
             chatId,
           );
         } else if (text === "/workload" || text === "/due" || text.includes("workload") || text.includes("due") || text.includes("next week") || text.includes("upcoming") || text.includes("assignment")) {
@@ -1133,6 +1136,9 @@ async function runTelegramBot(client: TelegramClient): Promise<void> {
             }
             await client.sendMessage(msg.trim(), chatId);
           }
+        } else if (text.startsWith("/pdf")) {
+          const query = text.replace("/pdf", "").trim();
+          await handlePdfCommand(client, canvasConfig, chatId, query);
         } else if (text === "/courses" || text.includes("courses") || text.includes("classes")) {
           await client.sendMessage("Fetching courses...", chatId);
           const courses = await fetchEnrolledCourses(canvasConfig.baseUrl, canvasConfig.accessToken);
@@ -1157,6 +1163,142 @@ async function runTelegramBot(client: TelegramClient): Promise<void> {
       // Wait before retrying on error
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
+  }
+}
+
+async function handlePdfCommand(
+  client: TelegramClient,
+  canvasConfig: { baseUrl: string; accessToken: string },
+  chatId: string,
+  query: string,
+): Promise<void> {
+  try {
+    // Fetch active courses
+    const coursesResponse = await fetch(
+      new URL("/api/v1/courses?enrollment_state=active&per_page=50", canvasConfig.baseUrl),
+      { headers: { Authorization: `Bearer ${canvasConfig.accessToken}` } },
+    );
+    if (!coursesResponse.ok) {
+      await client.sendMessage("Could not fetch courses from Canvas.", chatId);
+      return;
+    }
+
+    const allCourses = (await coursesResponse.json()) as Array<{
+      id: number;
+      name?: string;
+      course_code?: string;
+    }>;
+
+    // Filter to real courses
+    const junkPatterns = [
+      "NONCREDIT", "PLACEMENT", "WELCOME", "EMERGENCY", "ALERT",
+      "TRAINING", "Self-Paced", "CIVICS", "DATAFEST", "Placement Exam",
+    ];
+    const courses = allCourses.filter((c) => {
+      const name = c.name || c.course_code || "";
+      return !junkPatterns.some((p) => name.includes(p));
+    });
+
+    // If no query, list courses to pick from
+    if (!query) {
+      let msg = "Which course? Type /pdf followed by a keyword:\n\n";
+      for (const c of courses) {
+        const name = c.name || c.course_code || "Unknown";
+        const match = name.match(/\d{4}\w{2}-([A-Z_]+)-(\d{4})/);
+        const shortName = match?.[1] && match[2] ? `${match[1].replace(/_/g, " ")} ${match[2]}` : name;
+        msg += `• /pdf ${shortName.split(" ")[0]?.toLowerCase()} — ${shortName}\n`;
+      }
+      await client.sendMessage(msg.trim(), chatId);
+      return;
+    }
+
+    // Match query to a course
+    const matched = courses.find((c) => {
+      const name = (c.name || c.course_code || "").toLowerCase();
+      return name.includes(query.toLowerCase());
+    });
+
+    if (!matched) {
+      await client.sendMessage(`No course matching "${query}". Try /pdf to see options.`, chatId);
+      return;
+    }
+
+    const courseName = matched.name || matched.course_code || "Unknown";
+    await client.sendMessage(`Fetching assignments for ${courseName}...`, chatId);
+
+    // Get assignments with attached files
+    const assignmentsResponse = await fetch(
+      new URL(`/api/v1/courses/${matched.id}/assignments?per_page=50&order_by=due_at`, canvasConfig.baseUrl),
+      { headers: { Authorization: `Bearer ${canvasConfig.accessToken}` } },
+    );
+
+    if (!assignmentsResponse.ok) {
+      await client.sendMessage("Could not fetch assignments.", chatId);
+      return;
+    }
+
+    const assignments = (await assignmentsResponse.json()) as Array<{
+      id: number;
+      name: string;
+      description: string | null;
+      due_at: string | null;
+    }>;
+
+    // Find assignments with PDF attachments
+    const withFiles = assignments.filter((a) => {
+      if (!a.description) return false;
+      return /\/files\/\d+/.test(a.description);
+    });
+
+    if (withFiles.length === 0) {
+      await client.sendMessage("No assignments with attached files found for this course.", chatId);
+      return;
+    }
+
+    // Send the most recent 3 (or fewer)
+    const recent = withFiles.slice(-3);
+    const config = getCanvasConfig();
+
+    for (const assignment of recent) {
+      const fileIds = [...new Set(
+        (assignment.description ?? "").match(/\/files\/(\d+)/g)?.map((m) => parseInt(m.replace("/files/", ""), 10)) ?? [],
+      )];
+
+      for (const fileId of fileIds) {
+        try {
+          const fileInfo = await fetch(
+            new URL(`/api/v1/courses/${matched.id}/files/${fileId}`, canvasConfig.baseUrl),
+            { headers: { Authorization: `Bearer ${canvasConfig.accessToken}` } },
+          );
+          if (!fileInfo.ok) continue;
+
+          const info = (await fileInfo.json()) as { filename: string; url: string };
+          const fileResponse = await fetch(info.url);
+          if (!fileResponse.ok) continue;
+
+          const buffer = Buffer.from(await fileResponse.arrayBuffer());
+          const { mkdir, writeFile } = await import("node:fs/promises");
+          const filePath = `generated/${info.filename}`;
+          await mkdir("generated", { recursive: true });
+          await writeFile(filePath, buffer);
+
+          const due = assignment.due_at
+            ? new Date(assignment.due_at).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })
+            : "no due date";
+
+          await client.sendDocument(filePath, `${assignment.name} — due ${due}`, chatId);
+        } catch {
+          // Skip files that fail to download
+        }
+      }
+    }
+
+    await client.sendMessage("Done! All available PDFs sent above.", chatId);
+  } catch (err) {
+    await client.sendMessage(
+      `Error: ${err instanceof Error ? err.message : "unknown"}`,
+      chatId,
+    );
   }
 }
 
