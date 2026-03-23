@@ -259,6 +259,25 @@ This repo is still intentionally focused on the CLI first. The product direction
 - `CLI v1`: terminal-first Canvas + integration assistant
 - `Chrome extension v2`: optional in-browser helper for Canvas pages
 
+## Install as a Codex skill
+
+If you already use Codex, you can install Aristotle as a local skill and invoke it directly.
+
+From the repo root:
+
+```bash
+mkdir -p ~/.codex/skills
+ln -s "$PWD/skills/aristotle" ~/.codex/skills/aristotle
+```
+
+Then use it in Codex with prompts like:
+
+- `Use $aristotle to check what matters in my next 7 days`
+- `Use $aristotle to prep me for ECE 3510`
+- `Use $aristotle to sync Canvas and publish my next task to Trello`
+
+The skill is a thin workflow layer on top of this repo, so the repo stays the source of truth and the skill gives you the easier in-terminal entry point.
+
 See [docs/product-spec.md](docs/product-spec.md).
 
 ## Testing

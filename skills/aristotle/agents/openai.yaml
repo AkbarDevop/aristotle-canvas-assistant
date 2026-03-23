@@ -1,0 +1,4 @@
+interface:
+  display_name: "Aristotle"
+  short_description: "Canvas copilot for study planning"
+  default_prompt: "Use $aristotle to sync Canvas, review what matters next, and turn coursework into an actionable study plan."
