@@ -73,6 +73,12 @@
     "microsoft:todo-preview": "tsx src/index.ts microsoft todo-preview",
     "microsoft:todo-create": "tsx src/index.ts microsoft todo-create",
     "microsoft:todo-from-task": "tsx src/index.ts microsoft todo-from-task",
+    "telegram:profile": "tsx src/index.ts telegram profile",
+    "telegram:send": "tsx src/index.ts telegram send",
+    "telegram:send-file": "tsx src/index.ts telegram send-file",
+    "generate:download": "tsx src/index.ts generate download",
+    "generate:list": "tsx src/index.ts generate list",
+    "generate:send": "tsx src/index.ts generate send",
     "state": "tsx src/index.ts state",
     "test": "tsx --test test/**/*.test.ts"
   },
