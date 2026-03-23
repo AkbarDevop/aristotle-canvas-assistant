@@ -38,12 +38,22 @@ PAPER_COLOR = (245, 242, 235)   # off-white / aged paper
 
 def load_fonts():
     return {
-        "title":  ImageFont.truetype(FONT_PATH, 48),
-        "heading": ImageFont.truetype(FONT_PATH, 40),
-        "bold":   ImageFont.truetype(FONT_PATH, 36),
-        "body":   ImageFont.truetype(FONT_PATH, 33),
-        "small":  ImageFont.truetype(FONT_PATH, 28),
+        "title":  48,
+        "heading": 40,
+        "bold":   36,
+        "body":   33,
+        "small":  28,
     }
+
+# Cache fonts at different sizes to avoid re-loading constantly
+_font_cache = {}
+
+def get_font(base_size):
+    """Return a font with slight random size variation (+/- 1px)."""
+    size = base_size + random.choice([-1, 0, 0, 0, 0, 1])
+    if size not in _font_cache:
+        _font_cache[size] = ImageFont.truetype(FONT_PATH, size)
+    return _font_cache[size]
 
 
 def jitter(base, mag=2):
@@ -70,8 +80,9 @@ def paper_background(w, h):
     return img
 
 
-def wrap_text(text, font, max_width, draw):
+def wrap_text(text, font_size, max_width, draw):
     """Word-wrap text to fit within max_width."""
+    font = get_font(font_size)  # use base size for measuring wrap
     lines = []
     for paragraph in text.split("\n"):
         if not paragraph.strip():
@@ -92,31 +103,56 @@ def wrap_text(text, font, max_width, draw):
     return lines
 
 
-def draw_handwritten_line(draw, x, y, text, font, color, img=None):
-    """Draw a single line with subtle human-like imperfections."""
+def draw_handwritten_line(draw, x, y, text, font_size, color, img=None):
+    """Draw a line word-by-word for natural spacing, with per-word variation."""
     cx = x
-    # gentle baseline drift
     baseline_drift = 0
-    drift_speed = random.uniform(-0.08, 0.08)
-    for i, ch in enumerate(text):
-        dx = random.uniform(-0.5, 0.5)
-        dy = random.uniform(-0.7, 0.7) + baseline_drift
-        # slight pressure variation (ink darkness)
+    drift_speed = random.uniform(-0.06, 0.06)
+    words = text.split(" ")
+    for wi, word in enumerate(words):
+        if not word:
+            cx += font_size * 0.3
+            continue
+        # each word gets a slightly different font size
+        word_font = get_font(font_size)
+        dy = random.uniform(-0.6, 0.6) + baseline_drift
+        # ink pressure variation per word
         r, g, b = color
         shade = random.randint(-8, 5)
-        ch_color = (max(0, min(255, r + shade)),
-                    max(0, min(255, g + shade)),
-                    max(0, min(255, b + shade)))
-        draw.text((cx + dx, y + dy), ch, font=font, fill=ch_color)
-        bbox = draw.textbbox((0, 0), ch, font=font)
-        # slight spacing variation
-        cx += bbox[2] - bbox[0] + random.uniform(-0.3, 0.6)
-        # drift baseline gently
+        w_color = (max(0, min(255, r + shade)),
+                   max(0, min(255, g + shade)),
+                   max(0, min(255, b + shade)))
+
+        bbox = draw.textbbox((0, 0), word, font=word_font)
+        ww = bbox[2] - bbox[0]
+        wh = bbox[3] - bbox[1]
+
+        # ~20% of words get a very slight tilt
+        if img and random.random() < 0.2 and len(word) > 1:
+            angle = random.uniform(-1.2, 1.2)
+            pad = 4
+            tmp = Image.new("RGBA", (ww + pad * 2, wh + pad * 2), (0, 0, 0, 0))
+            tmp_d = ImageDraw.Draw(tmp)
+            tmp_d.text((pad, pad), word, font=word_font, fill=(*w_color, 255))
+            tmp = tmp.rotate(angle, resample=Image.BICUBIC, expand=False)
+            px = int(cx)
+            py = int(y + dy)
+            if 0 <= px < img.width - tmp.width and 0 <= py < img.height - tmp.height:
+                img.paste(tmp, (px, py), tmp)
+            else:
+                draw.text((cx, y + dy), word, font=word_font, fill=w_color)
+        else:
+            draw.text((cx, y + dy), word, font=word_font, fill=w_color)
+
+        # natural word spacing with slight variation
+        space_w = font_size * random.uniform(0.28, 0.42)
+        cx += ww + space_w
+        # gentle baseline drift
         baseline_drift += drift_speed
         if abs(baseline_drift) > 2:
             drift_speed *= -0.7
-        if random.random() < 0.08:
-            drift_speed = random.uniform(-0.1, 0.1)
+        if random.random() < 0.1:
+            drift_speed = random.uniform(-0.08, 0.08)
 
 
 def scan_artifacts(img):
@@ -217,20 +253,21 @@ def render_pages(content_pages):
             continue
 
         if line["kind"] == "title":
-            font = fonts["title"]
+            fs = fonts["title"]
             color = TITLE_COLOR
-            bbox = draw.textbbox((0, 0), text, font=font)
+            measure_font = get_font(fs)
+            bbox = draw.textbbox((0, 0), text, font=measure_font)
             tw = bbox[2] - bbox[0]
             x = (PAGE_W - tw) // 2
             draw_handwritten_line(draw, jitter(x, 4), jitter(y, 3),
-                                  text, font, color, img=img)
+                                  text, fs, color, img=img)
             y += 58
         elif line["kind"] == "heading":
-            font = fonts["heading"]
+            fs = fonts["heading"]
             color = INK_COLOR
             y += 20
             draw_handwritten_line(draw, jitter(MARGIN_L, 3), jitter(y, 2),
-                                  text, font, color, img=img)
+                                  text, fs, color, img=img)
             # sloppy underline
             uy = y + 42
             points = []
@@ -243,14 +280,14 @@ def render_pages(content_pages):
                 draw.line(points, fill=INK_COLOR, width=1)
             y += 58
         elif is_answer_line(line):
-            # just underline the answer, no box, same ink
-            font = fonts["bold"]
+            fs = fonts["bold"]
             y += 6
             draw_handwritten_line(draw, jitter(MARGIN_L, 2), jitter(y, 2),
-                                  text, font, INK_COLOR, img=img)
+                                  text, fs, INK_COLOR, img=img)
             # hand-drawn underline beneath answer
             uy = y + 38
-            bbox = draw.textbbox((0, 0), text, font=font)
+            measure_font = get_font(fs)
+            bbox = draw.textbbox((0, 0), text, font=measure_font)
             tw = bbox[2] - bbox[0]
             pts = []
             lx = MARGIN_L - 4
@@ -261,19 +298,19 @@ def render_pages(content_pages):
                 draw.line(pts, fill=INK_COLOR, width=2)
             y += 52
         elif line["bold"]:
-            font = fonts["bold"]
+            fs = fonts["bold"]
             draw_handwritten_line(draw, jitter(MARGIN_L, 2), jitter(y, 2),
-                                  text, font, INK_COLOR, img=img)
+                                  text, fs, INK_COLOR, img=img)
             y += 46
         else:
-            font = fonts["body"]
-            wrapped = wrap_text(text, font, max_w, draw)
+            fs = fonts["body"]
+            wrapped = wrap_text(text, fs, max_w, draw)
             for wl in wrapped:
                 if not wl:
                     y += 18
                     continue
                 draw_handwritten_line(draw, jitter(MARGIN_L, 2),
-                                      jitter(y, 1.5), wl, font, INK_COLOR, img=img)
+                                      jitter(y, 1.5), wl, fs, INK_COLOR, img=img)
                 y += 40
 
         # page overflow → new page
