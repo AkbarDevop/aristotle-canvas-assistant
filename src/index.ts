@@ -30,7 +30,7 @@ import { TodoistClient } from "./connectors/todoist.js";
 import { NotionClient } from "./connectors/notion.js";
 import { GoogleTasksClient } from "./connectors/google-tasks.js";
 import { MicrosoftGraphClient } from "./connectors/microsoft-graph.js";
-import { TelegramClient } from "./connectors/telegram.js";
+import { TelegramClient, type TelegramUpdate } from "./connectors/telegram.js";
 import {
   fetchAssignmentDetails,
   downloadAssignmentFiles,
@@ -1065,9 +1065,178 @@ async function runTelegramCommand(
     return;
   }
 
+  if (subcommand === "bot") {
+    await runTelegramBot(client);
+    return;
+  }
+
   throw new Error(
-    "Use `npm run telegram:profile`, `npm run telegram:send`, or `npm run telegram:send-file`.",
+    "Use `npm run telegram:profile`, `npm run telegram:send`, `npm run telegram:send-file`, or `npm run telegram:bot`.",
   );
+}
+
+async function runTelegramBot(client: TelegramClient): Promise<void> {
+  const canvasConfig = getCanvasConfig();
+  const canvasClient = new CanvasClient(canvasConfig);
+
+  console.log("Aristotle Telegram bot started. Listening for messages... (Ctrl+C to stop)");
+
+  let offset: number | undefined;
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    try {
+      const updates = await client.getUpdates(offset);
+
+      for (const update of updates) {
+        offset = update.update_id + 1;
+        const text = update.message?.text?.trim().toLowerCase();
+        const chatId = String(update.message?.chat.id ?? "");
+        const firstName = update.message?.from?.first_name ?? "there";
+
+        if (!text || !chatId) continue;
+
+        console.log(`[${new Date().toLocaleTimeString()}] ${firstName}: ${text}`);
+
+        if (text === "/start") {
+          await client.sendMessage(
+            `Hey ${firstName}! I'm Aristotle, your Canvas assistant.\n\n` +
+            `Try these commands:\n` +
+            `/workload — what's due this week\n` +
+            `/courses — your enrolled courses\n` +
+            `/help — all commands`,
+            chatId,
+          );
+        } else if (text === "/help") {
+          await client.sendMessage(
+            `Available commands:\n\n` +
+            `/start — welcome message\n` +
+            `/workload — upcoming assignments (next 7 days)\n` +
+            `/courses — list your courses\n` +
+            `/due — everything due this week\n` +
+            `/help — this message\n\n` +
+            `Or just ask me anything like "what's due tomorrow?"`,
+            chatId,
+          );
+        } else if (text === "/workload" || text === "/due" || text.includes("workload") || text.includes("due") || text.includes("next week") || text.includes("upcoming") || text.includes("assignment")) {
+          await client.sendMessage("Checking Canvas...", chatId);
+          const assignments = await fetchUpcomingAssignments(canvasConfig.baseUrl, canvasConfig.accessToken, 14);
+          if (assignments.length === 0) {
+            await client.sendMessage("No assignments due in the next 2 weeks. You're clear!", chatId);
+          } else {
+            let msg = `Upcoming assignments:\n\n`;
+            for (const a of assignments) {
+              const due = a.dueAt
+                ? new Date(a.dueAt).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+                : "no date";
+              msg += `• ${a.title}\n  ${a.course} — due ${due}\n\n`;
+            }
+            await client.sendMessage(msg.trim(), chatId);
+          }
+        } else if (text === "/courses" || text.includes("courses") || text.includes("classes")) {
+          await client.sendMessage("Fetching courses...", chatId);
+          const courses = await fetchEnrolledCourses(canvasConfig.baseUrl, canvasConfig.accessToken);
+          if (courses.length === 0) {
+            await client.sendMessage("No active courses found.", chatId);
+          } else {
+            let msg = `Your courses:\n\n`;
+            for (const c of courses) {
+              msg += `• ${c}\n`;
+            }
+            await client.sendMessage(msg.trim(), chatId);
+          }
+        } else {
+          await client.sendMessage(
+            `I got your message! Try /help to see what I can do.\n\nQuick commands: /workload, /courses, /due`,
+            chatId,
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Poll error:", err instanceof Error ? err.message : err);
+      // Wait before retrying on error
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+  }
+}
+
+interface UpcomingAssignment {
+  title: string;
+  course: string;
+  dueAt: string | null;
+}
+
+async function fetchUpcomingAssignments(
+  baseUrl: string,
+  token: string,
+  days: number,
+): Promise<UpcomingAssignment[]> {
+  try {
+    const response = await fetch(
+      new URL("/api/v1/users/self/upcoming_events", baseUrl),
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return [];
+
+    const events = (await response.json()) as Array<{
+      type?: string;
+      title: string;
+      end_at?: string;
+      context_name?: string;
+      assignment?: { name?: string; due_at?: string };
+    }>;
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + days);
+
+    return events
+      .filter((e) => (e.type ?? "assignment") === "assignment")
+      .filter((e) => {
+        const due = e.end_at ?? e.assignment?.due_at;
+        if (!due) return true;
+        return new Date(due) <= cutoff;
+      })
+      .map((e) => ({
+        title: e.assignment?.name?.trim() || e.title.trim(),
+        course: e.context_name?.trim() || "Unknown",
+        dueAt: e.end_at ?? e.assignment?.due_at ?? null,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+async function fetchEnrolledCourses(
+  baseUrl: string,
+  token: string,
+): Promise<string[]> {
+  try {
+    const response = await fetch(
+      new URL("/api/v1/courses?enrollment_state=active&per_page=50", baseUrl),
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return [];
+
+    const courses = (await response.json()) as Array<{ name?: string; course_code?: string }>;
+    const junkPatterns = [
+      "NONCREDIT", "PLACEMENT", "WELCOME", "EMERGENCY", "ALERT",
+      "TRAINING", "Self-Paced", "CIVICS", "DATAFEST", "Placement Exam",
+    ];
+    return courses
+      .map((c) => c.name || c.course_code || "Unknown")
+      .filter((name) => !junkPatterns.some((p) => name.includes(p)))
+      .map((name) => {
+        // Clean up "2026SP-CHEM-1400-01" → "CHEM 1400"
+        const match = name.match(/\d{4}\w{2}-([A-Z_]+)-(\d{4})/);
+        if (match?.[1] && match[2]) {
+          const dept = match[1].replace(/_/g, " ");
+          return `${dept} ${match[2]}`;
+        }
+        return name;
+      });
+  } catch {
+    return [];
+  }
 }
 
 async function runGenerateCommand(

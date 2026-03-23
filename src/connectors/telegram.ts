@@ -8,6 +8,17 @@ interface TelegramResponse {
   result?: unknown;
 }
 
+export interface TelegramUpdate {
+  update_id: number;
+  message?: {
+    message_id: number;
+    from?: { id: number; first_name: string; username?: string };
+    chat: { id: number; type: string };
+    date: number;
+    text?: string;
+  };
+}
+
 export class TelegramClient {
   private readonly apiBase: string;
 
@@ -69,6 +80,18 @@ export class TelegramClient {
     }
 
     return data;
+  }
+
+  async getUpdates(offset?: number): Promise<TelegramUpdate[]> {
+    const params = new URLSearchParams({ timeout: "30", limit: "10" });
+    if (offset !== undefined) params.set("offset", String(offset));
+
+    const response = await fetch(`${this.apiBase}/getUpdates?${params}`);
+    const data = (await response.json()) as {
+      ok: boolean;
+      result?: TelegramUpdate[];
+    };
+    return data.ok ? (data.result ?? []) : [];
   }
 
   async getMe(): Promise<TelegramResponse> {

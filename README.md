@@ -1,308 +1,225 @@
 # Aristotle Canvas Assistant
 
-Aristotle Canvas Assistant is a terminal-first Canvas copilot for students who already live in `Codex`, `Claude Code`, or a shell.
-
-It pulls Canvas assignments, turns them into concrete tasks, keeps local state on your machine, and can publish that work out to the tools people already use: Google Calendar, Google Tasks, Trello, Todoist, Notion, Outlook Calendar, and Microsoft To Do.
-
-![Aristotle terminal preview](docs/assets/terminal-preview.svg)
-
-## Why this exists
-
-Canvas shows deadlines. It usually does not tell you:
-
-- what to do first
-- how to break an assignment down
-- what course is about to collide with another one
-- what to review for a specific class right now
-- how to push that plan into your actual workflow tools
-
-Aristotle sits on top of Canvas and gives you:
-
-- local task breakdowns
-- terminal reports
-- course-specific prep views
-- one-command publishing into popular calendar, task, and notes apps
-
-## 30-second demo
+> **Get started in 30 seconds.** Clone → install → run setup. One token, done.
 
 ```bash
-npm run canvas:sync
-npm run tasks
-npm run publish -- --to trello --id <task_id> --dry-run
-npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+git clone https://github.com/AkbarDevop/aristotle-canvas-assistant.git
+cd aristotle-canvas-assistant
+npm install
+npm run setup
 ```
 
-That is the core loop:
+The wizard walks you through everything. You only need **one thing**: your Canvas access token.
 
-1. pull assignments from Canvas
-2. let Aristotle break them into tasks
-3. push the one you care about into the external tool you actually use
+**Get your Canvas token (20 seconds):**
+Canvas → Profile picture (top left) → **Settings** → **Approved Integrations** → **+ New Access Token** → copy it → paste into wizard.
 
-## Product shape
+> Some schools disable student tokens. If you don't see the option, ask your IT department.
 
-This repo is intentionally not a dashboard app.
+---
 
-The main workflow is:
+Terminal-first Canvas LMS copilot. Pulls assignments, breaks them into tasks, publishes to your tools. Built for students who live in `Claude Code`, `Codex`, or a terminal.
 
-```text
-Canvas
-  ->
-local sync
-  ->
-Aristotle task breakdown
-  ->
-terminal reports
-  ->
-publish selected tasks to external apps
+## What it does
+
+```
+Canvas → Aristotle sync → task breakdown → terminal reports → publish to your apps
 ```
 
-That makes it fit well inside:
+- Pulls assignments and deadlines from Canvas
+- Breaks them into actionable study tasks
+- Shows what to do first (priority + deadline awareness)
+- Publishes tasks to the app you actually use
 
-- `Codex`
-- `Claude Code`
-- a normal terminal session
+## Core commands
+
+```bash
+npm run canvas:sync                    # Pull assignments from Canvas
+npm run updates -- --days 7            # What's due this week
+npm run prep -- --course "ECE 3510"    # Course-specific prep
+npm run tasks                          # List all tasks
+npm run task -- --id <id> --status done  # Mark done
+```
+
+## Publish to your apps
+
+```bash
+npm run publish -- --to trello --id <id> --dry-run
+npm run publish -- --to google-calendar --id <id> --start 2026-03-24T20:00:00 --hours 2 --dry-run
+npm run publish -- --to todoist --id <id> --dry-run
+npm run publish -- --to notion --id <id> --dry-run
+npm run publish -- --to microsoft-todo --id <id> --dry-run
+```
+
+Remove `--dry-run` when you're ready to create for real.
 
 ## Supported integrations
 
-Core source:
+| App | Type | Setup time |
+|-----|------|-----------|
+| **Canvas** | Source (required) | 20 sec — token from Settings |
+| **Telegram** | Notifications + PDFs | 60 sec — create bot via @BotFather |
+| **Google Calendar** | Calendar | 2 min — OAuth credentials |
+| **Google Tasks** | Tasks | 2 min — same OAuth as Calendar |
+| **Trello** | Tasks | 60 sec — API key from Power-Ups |
+| **Todoist** | Tasks | 30 sec — token from Settings |
+| **Notion** | Notes | 60 sec — create integration |
+| **Outlook / Microsoft To Do** | Calendar + Tasks | 2 min — Graph Explorer token |
 
-- `Canvas`
+Only Canvas is required. Everything else is opt-in.
 
-Calendars:
+## Connect Telegram (60 seconds)
 
-- `Google Calendar`
-- `Outlook Calendar` via Microsoft Graph
+Aristotle can send you assignment PDFs and reminders straight to Telegram.
 
-Task apps:
+### Step 1: Create a bot (30 sec)
 
-- `Google Tasks`
-- `Trello`
-- `Todoist`
-- `Microsoft To Do`
+1. Open Telegram, search for **@BotFather**
+2. Send `/newbot`
+3. Pick a name (e.g. "Aristotle") and username (e.g. `aristotle_canvas_bot`)
+4. BotFather gives you a token like `7123456789:AAF1x...` — copy it
 
-Notes / workspace:
+### Step 2: Get your chat ID (30 sec)
 
-- `Notion`
+1. Open your new bot in Telegram and send it any message (e.g. "hello")
+2. Open this URL in your browser (replace `YOUR_TOKEN`):
+   ```
+   https://api.telegram.org/botYOUR_TOKEN/getUpdates
+   ```
+3. Find `"chat":{"id":123456789}` in the response — that number is your chat ID
 
-## What it does today
+### Step 3: Add to config
 
-- connect to Canvas with a personal access token
-- preview upcoming assignments
-- sync assignments into local Aristotle state
-- break assignments into actionable tasks and outlines
-- print a plain-text updates report
-- print a course-specific prep report
-- publish an Aristotle task into external apps with `from-task`
-- keep all generated state on your machine
+If you ran `npm run setup`, you already entered these. Otherwise add to `.env`:
 
-## Quick start
-
-```bash
-npm install
-cp .env.example .env
+```env
+TELEGRAM_BOT_TOKEN=7123456789:AAF1x...
+TELEGRAM_CHAT_ID=123456789
 ```
 
-Minimum required for the Canvas workflow:
-
-- `CANVAS_BASE_URL`
-- `CANVAS_ACCESS_TOKEN`
-
-Then verify the connection:
+### Test it
 
 ```bash
-npm run canvas:profile
-npm run canvas:preview
+npm run telegram:profile          # Should show your bot's name
+npm run telegram:send             # Send a test message
+npm run generate:list             # List Canvas assignments
+npm run generate:send             # Download + send PDF to Telegram
 ```
 
-If you do not know where to get the required tokens and IDs, use the setup guide:
+## Connect other apps
 
-- [Getting Credentials](docs/getting-credentials.md)
+<details>
+<summary><strong>Google Calendar / Google Tasks</strong></summary>
 
-## Core terminal workflow
+1. Go to [Google Cloud Console](https://console.cloud.google.com)
+2. Create a project → enable **Google Calendar API** (and **Tasks API** if needed)
+3. Go to **Credentials** → **Create OAuth client** → type **Desktop app**
+4. Download the JSON file
+
+```env
+GOOGLE_CLIENT_CREDENTIALS_PATH=/path/to/credentials.json
+GOOGLE_CALENDAR_ID=primary
+```
 
 ```bash
-npm run canvas:sync
-npm run updates -- --days 7
-npm run prep -- --course "ECE 3510"
-npm run tasks
+npm run google:auth    # Opens browser, one-time OAuth
 ```
 
-Example task update:
+</details>
+
+<details>
+<summary><strong>Trello</strong></summary>
+
+1. Go to [trello.com/power-ups/admin](https://trello.com/power-ups/admin)
+2. Create a Power-Up → copy **API Key**
+3. Follow the token link to generate a **user token**
+
+```env
+TRELLO_API_KEY=your_key
+TRELLO_TOKEN=your_token
+```
 
 ```bash
-npm run task -- --id <task_id> --status done
+npm run trello:profile    # Find your board/list IDs
 ```
 
-## Publish a task into other apps
+</details>
 
-Once Aristotle has local tasks, you can push a task into the apps you actually use.
+<details>
+<summary><strong>Todoist</strong></summary>
 
-Examples:
+1. [Todoist Settings](https://todoist.com) → **Integrations** → **Developer** → copy **API Token**
 
-```bash
-npm run publish -- --to trello --id <task_id> --dry-run
-npm run publish -- --to todoist --id <task_id> --dry-run
-npm run publish -- --to notion --id <task_id> --dry-run
-npm run publish -- --to google-tasks --id <task_id> --dry-run
-npm run publish -- --to microsoft-todo --id <task_id> --dry-run
-npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
-npm run publish -- --to microsoft-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+```env
+TODOIST_API_TOKEN=your_token
 ```
 
-Supported `--to` targets:
+</details>
 
-- `google-calendar`
-- `google-tasks`
-- `trello`
-- `todoist`
-- `notion`
-- `microsoft-calendar`
-- `microsoft-todo`
+<details>
+<summary><strong>Notion</strong></summary>
 
-For calendars, `publish` creates a study block. For task and notes apps, it publishes the Aristotle task directly.
+1. Create an [internal integration](https://www.notion.so/my-integrations) → copy token
+2. Share your target page with the integration
 
-## Main commands
+```env
+NOTION_API_TOKEN=your_token
+NOTION_PARENT_PAGE_ID=page_id_from_url
+```
 
-Canvas + Aristotle:
+</details>
 
-- `npm run canvas:profile`
-- `npm run canvas:preview`
-- `npm run canvas:sync`
-- `npm run updates -- --days 7`
-- `npm run prep -- --course "ECE 3510"`
-- `npm run courses`
-- `npm run tasks`
-- `npm run task -- --id <task_id> --status in_progress`
-- `npm run intake -- --interactive --sync`
-- `npm run state`
-- `npm run publish -- --to <target> --id <task_id> [--dry-run]`
+<details>
+<summary><strong>Microsoft (Outlook Calendar / To Do)</strong></summary>
 
-Power-user direct app commands:
-These stay available if you want app-specific control instead of the unified `publish` command.
+1. Open [Graph Explorer](https://developer.microsoft.com/en-us/graph/graph-explorer)
+2. Sign in → consent to calendar + todo permissions
+3. Copy the access token
 
-Google Calendar:
+```env
+MICROSOFT_GRAPH_ACCESS_TOKEN=your_token
+MICROSOFT_TIME_ZONE=America/Chicago
+```
 
-- `npm run google:auth`
-- `npm run google:preview`
-- `npm run google:create`
-- `npm run google:from-task`
+> Note: This token is short-lived. For durable setup, register your own app.
 
-Google Tasks:
+</details>
 
-- `npm run google-tasks:auth`
-- `npm run google-tasks:lists`
-- `npm run google-tasks:preview`
-- `npm run google-tasks:create`
-- `npm run google-tasks:from-task`
-
-Trello:
-
-- `npm run trello:profile`
-- `npm run trello:preview`
-- `npm run trello:create`
-- `npm run trello:from-task`
-
-Todoist:
-
-- `npm run todoist:profile`
-- `npm run todoist:projects`
-- `npm run todoist:preview`
-- `npm run todoist:create`
-- `npm run todoist:from-task`
-
-Notion:
-
-- `npm run notion:profile`
-- `npm run notion:preview`
-- `npm run notion:create`
-- `npm run notion:from-task`
-
-Microsoft Graph:
-
-- `npm run microsoft:profile`
-- `npm run microsoft:calendar-preview`
-- `npm run microsoft:calendar-create`
-- `npm run microsoft:calendar-from-task`
-- `npm run microsoft:todo-lists`
-- `npm run microsoft:todo-preview`
-- `npm run microsoft:todo-create`
-- `npm run microsoft:todo-from-task`
-
-## Configuration
-
-The repo is still local-first:
-
-- data is stored in `aristotle-data/` by default
-- secrets stay in your local `.env`
-- no hosted backend is required
-
-Files written locally:
-
-- `state.json`
-- `latest-report.txt`
-- Google OAuth token files if you enable Google Calendar or Google Tasks
-
-Override the default data path with `ARISTOTLE_DATA_DIR` if you want.
-
-## Integration notes
-
-- `Google Calendar` and `Google Tasks` use local OAuth credentials plus local token files.
-- `Trello`, `Todoist`, `Notion`, and `Microsoft Graph` use API tokens in `.env`.
-- `Notion` expects a parent page ID for page creation.
-- `Microsoft Graph` expects a bearer token with the calendar and/or To Do scopes you need.
-- `publish -- --dry-run` is the safest way to verify what Aristotle will send before it creates anything.
-
-## CLI v1 and extension v2
-
-This repo is still intentionally focused on the CLI first. The product direction is:
-
-- `CLI v1`: terminal-first Canvas + integration assistant
-- `Chrome extension v2`: optional in-browser helper for Canvas pages
-
-## Install as a skill
-
-If you use Codex or Claude Code, Aristotle can be installed as a local skill.
-
-From the repo root:
+## Install as a skill (Claude Code / Codex)
 
 ```bash
 npm run skill:install
 ```
 
-That installs Aristotle into both:
+Then use in prompts:
 
-- `~/.codex/skills/aristotle`
-- `~/.claude/skills/aristotle`
-
-If you only want one surface:
-
-```bash
-npm run skill:install -- codex
-npm run skill:install -- claude
+```
+Use $aristotle to check what matters in my next 7 days
+Use $aristotle to prep me for ECE 3510
+Use $aristotle to sync Canvas and publish my next task to Trello
 ```
 
-Then use it with prompts like:
+## Architecture
 
-- `Use $aristotle to check what matters in my next 7 days`
-- `Use $aristotle to prep me for ECE 3510`
-- `Use $aristotle to sync Canvas and publish my next task to Trello`
+```
+src/
+├── connectors/     # Canvas, Google, Trello, Todoist, Notion, Microsoft, Telegram
+├── pipeline/       # sync, intake, tasks, publish, reports, generate-pdf
+├── interactive/    # setup wizard, intake wizard
+├── agents/         # Aristotle AI agent
+├── memory/         # local file store
+├── index.ts        # CLI entry point
+└── config.ts       # env loader
+```
 
-The installer creates symlinks back to this repo, so the repo stays the source of truth and the skill stays in sync.
-
-See [docs/product-spec.md](docs/product-spec.md).
+All state stored locally in `aristotle-data/`. No hosted backend. Your data stays on your machine.
 
 ## Testing
 
 ```bash
-npm run check
-npm run test
+npm run check    # TypeScript check
+npm run test     # Run tests
 ```
-
-## Docs
-
-- [Student Quickstart](docs/student-quickstart.md)
-- [Getting Credentials](docs/getting-credentials.md)
-- [Product Spec](docs/product-spec.md)
 
 ## License
 

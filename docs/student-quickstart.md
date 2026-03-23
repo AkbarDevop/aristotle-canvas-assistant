@@ -1,84 +1,58 @@
 # Student Quickstart
 
-## 1. Install
+## Setup (30 seconds)
 
 ```bash
+git clone https://github.com/AkbarDevop/aristotle-canvas-assistant.git
+cd aristotle-canvas-assistant
 npm install
-cp .env.example .env
+npm run setup
 ```
 
-## 2. Add your Canvas credentials
+The wizard asks for your Canvas URL and token. That's the only required step.
 
-Start with:
+### Where's my Canvas token?
 
-- `CANVAS_BASE_URL`
-- `CANVAS_ACCESS_TOKEN`
+Canvas → Profile picture (top left) → **Settings** → scroll to **Approved Integrations** → **+ New Access Token** → copy it.
 
-If you need help finding them:
-
-- [Getting Credentials](getting-credentials.md)
-
-Optional:
-
-- `ARISTOTLE_DATA_DIR` if you do not want the default `./aristotle-data`
-
-## 3. Verify the Canvas connection
+## Daily workflow
 
 ```bash
-npm run canvas:profile
-npm run canvas:preview
+npm run canvas:sync                    # Pull latest from Canvas
+npm run updates -- --days 7            # What's due this week
+npm run tasks                          # See your task list
+npm run task -- --id <id> --status done  # Check off a task
 ```
 
-## 4. Pull your assignments
+## Course-specific prep
 
 ```bash
-npm run canvas:sync
-```
-
-That will:
-
-- fetch upcoming Canvas assignments
-- enqueue them locally
-- run Aristotle on them
-- write tasks, drafts, events, and a terminal report
-
-## 5. Review what matters next
-
-```bash
-npm run updates -- --days 7
-npm run courses
 npm run prep -- --course "ECE 3510"
+npm run prep -- --course "CHEM 1400"
 ```
 
-## 6. Update tasks as you work
+## Push tasks to your apps
 
 ```bash
-npm run tasks
-npm run task -- --id <task_id> --status in_progress
-npm run task -- --id <task_id> --status done
+npm run publish -- --to trello --id <id> --dry-run
+npm run publish -- --to google-calendar --id <id> --start 2026-03-24T20:00:00 --hours 2 --dry-run
 ```
 
-## 7. Connect other apps if you want
+Remove `--dry-run` when ready.
 
-Pick only what you actually use:
+## Optional: Telegram notifications
 
-- `Google Calendar` and `Google Tasks`
-- `Trello`
-- `Todoist`
-- `Notion`
-- `Outlook Calendar` / `Microsoft To Do`
+Run `npm run setup` again and say yes to Telegram, or see the [README](../README.md#connect-telegram-60-seconds) for manual setup.
 
-Examples:
+## Optional: Install as a skill
 
 ```bash
-npm run publish -- --to trello --id <task_id> --dry-run
-npm run publish -- --to todoist --id <task_id> --dry-run
-npm run publish -- --to notion --id <task_id> --dry-run
-npm run publish -- --to google-calendar --id <task_id> --start 2026-03-24T20:00:00-05:00 --hours 2 --dry-run
+npm run skill:install
 ```
 
-## Files written locally
+Then in Claude Code or Codex:
 
-- `aristotle-data/state.json`
-- `aristotle-data/latest-report.txt`
-- optional Google OAuth token files if you enable Google integrations
+```
+Use $aristotle to check what matters in my next 7 days
+Use $aristotle to prep me for ECE 3510
+```

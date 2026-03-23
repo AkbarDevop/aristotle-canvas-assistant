@@ -31,69 +31,84 @@ export async function runSetupWizard(): Promise<void> {
     }
 
     // Step 1: Canvas setup
-    console.log("\n--- Step 1/4: Canvas LMS ---");
-    console.log("Aristotle needs your Canvas URL and access token to pull assignments.");
-    console.log("Your Canvas URL looks like: https://yourschool.instructure.com\n");
+    console.log("\n  [1/4] Canvas LMS");
+    console.log("  Your Canvas URL looks like: https://yourschool.instructure.com\n");
 
-    const canvasBaseUrl = await askRequired(rl, "Canvas URL");
+    const canvasBaseUrl = await askRequired(rl, "  Canvas URL");
     const cleanUrl = canvasBaseUrl.replace(/\/+$/, "");
 
-    console.log("\nTo get your access token:");
-    console.log("  1. Log in to Canvas");
-    console.log("  2. Go to Account > Settings");
-    console.log("  3. Scroll to Approved Integrations > + New Access Token");
-    console.log("  4. Copy the token\n");
+    console.log("\n  Get your token: Canvas → Profile → Settings → Approved Integrations → + New Access Token\n");
 
-    const canvasAccessToken = await askRequired(rl, "Canvas access token");
+    const canvasAccessToken = await askRequired(rl, "  Access token");
 
     // Verify Canvas connection
-    console.log("\nVerifying Canvas connection...");
+    process.stdout.write("\n  Verifying... ");
     const profile = await verifyCanvas(cleanUrl, canvasAccessToken);
 
     if (!profile) {
-      console.log("Could not connect to Canvas. Please check your URL and token.");
-      const retry = await askYesNo(rl, "Continue anyway?");
+      console.log("failed.");
+      console.log("  Could not connect. Check your URL and token.");
+      const retry = await askYesNo(rl, "  Continue anyway?");
       if (!retry) {
-        console.log("Setup cancelled.");
+        console.log("  Setup cancelled.");
         return;
       }
     } else {
-      console.log(`Connected! Welcome, ${profile.name} (${profile.email ?? "no email"}).`);
+      console.log(`done! Welcome, ${profile.name}.`);
     }
 
     // Step 2: Telegram (optional)
-    console.log("\n--- Step 2/4: Telegram Bot (optional) ---");
-    console.log("Aristotle can send you assignment PDFs and reminders via Telegram.");
-    const wantTelegram = await askYesNo(rl, "Set up Telegram?");
+    console.log("\n  [2/4] Telegram Bot (optional)");
+    console.log("  Get assignment PDFs and reminders in Telegram.");
+    const wantTelegram = await askYesNo(rl, "  Set up Telegram?");
 
     let telegramBotToken: string | undefined;
     let telegramChatId: string | undefined;
 
     if (wantTelegram) {
-      console.log("\nTo create a Telegram bot:");
-      console.log("  1. Open Telegram and search for @BotFather");
-      console.log("  2. Send /newbot and follow the prompts");
-      console.log("  3. Copy the bot token\n");
+      console.log("\n  Create a bot in 30 seconds:");
+      console.log("    1. Open Telegram → search @BotFather → send /newbot");
+      console.log("    2. Pick any name and username");
+      console.log("    3. Copy the token BotFather gives you\n");
 
-      telegramBotToken = await askRequired(rl, "Bot token");
+      telegramBotToken = await askRequired(rl, "  Bot token");
 
-      console.log("\nTo get your chat ID:");
-      console.log("  1. Send any message to your bot");
-      console.log("  2. Enter your Telegram chat ID (numeric)\n");
-
-      telegramChatId = await askRequired(rl, "Chat ID");
-
-      console.log("\nVerifying Telegram bot...");
+      process.stdout.write("\n  Verifying bot... ");
       const bot = await verifyTelegram(telegramBotToken);
       if (bot) {
-        console.log(`Bot connected: @${bot.username}`);
+        console.log(`connected! @${bot.username}`);
       } else {
-        console.log("Could not verify bot. Check the token later.");
+        console.log("could not verify. Check the token later.");
+      }
+
+      console.log("\n  Now get your chat ID:");
+      console.log("    1. Send any message to your bot in Telegram");
+      console.log("    2. Then press Enter here and we'll detect it automatically\n");
+
+      const autoDetect = await askYesNo(rl, "  Auto-detect chat ID? (send a message to your bot first)");
+
+      if (autoDetect && telegramBotToken) {
+        process.stdout.write("  Detecting... ");
+        const detectedId = await detectTelegramChatId(telegramBotToken);
+        telegramChatId = detectedId ?? undefined;
+        if (telegramChatId) {
+          console.log(`found! Chat ID: ${telegramChatId}`);
+        } else {
+          console.log("no messages found. Enter it manually.");
+          console.log("  Open: https://api.telegram.org/bot<TOKEN>/getUpdates");
+          console.log("  Look for \"chat\":{\"id\":YOUR_NUMBER}\n");
+          telegramChatId = await askRequired(rl, "  Chat ID");
+        }
+      } else {
+        console.log("\n  To find your chat ID manually:");
+        console.log(`  Open: https://api.telegram.org/bot${telegramBotToken}/getUpdates`);
+        console.log("  Find \"chat\":{\"id\":YOUR_NUMBER} in the response\n");
+        telegramChatId = await askRequired(rl, "  Chat ID");
       }
     }
 
     // Step 3: Write .env
-    console.log("\n--- Step 3/4: Saving configuration ---");
+    console.log("\n  [3/4] Saving configuration");
     const envContent = buildEnvFile({
       canvasBaseUrl: cleanUrl,
       canvasAccessToken,
@@ -102,11 +117,11 @@ export async function runSetupWizard(): Promise<void> {
     }, existingEnv);
 
     await writeFile(envPath, envContent, "utf-8");
-    console.log("Configuration saved to .env");
+    console.log("  Saved to .env");
 
     // Step 4: First sync
-    console.log("\n--- Step 4/4: First sync ---");
-    const doSync = await askYesNo(rl, "Sync your Canvas assignments now?");
+    console.log("\n  [4/4] First sync");
+    const doSync = await askYesNo(rl, "  Pull your Canvas assignments now?");
 
     if (doSync) {
       console.log("\nSyncing...");
@@ -120,35 +135,37 @@ export async function runSetupWizard(): Promise<void> {
 }
 
 function printBanner(): void {
-  console.log("=".repeat(50));
-  console.log("  Aristotle Canvas Assistant - Setup");
-  console.log("=".repeat(50));
   console.log("");
-  console.log("This wizard will configure Aristotle in ~2 minutes.");
-  console.log("You will need:");
-  console.log("  - Your Canvas LMS URL and access token");
-  console.log("  - (Optional) A Telegram bot token");
+  console.log("  ╔══════════════════════════════════════════╗");
+  console.log("  ║   Aristotle Canvas Assistant — Setup     ║");
+  console.log("  ╚══════════════════════════════════════════╝");
+  console.log("");
+  console.log("  This takes ~30 seconds. You need one thing:");
+  console.log("  → Your Canvas access token (Settings → Approved Integrations)");
+  console.log("");
 }
 
 function printSuccess(name?: string): void {
   console.log("");
-  console.log("=".repeat(50));
-  console.log("  Setup complete!");
-  console.log("=".repeat(50));
+  console.log("  ╔══════════════════════════════════════════╗");
+  console.log("  ║          You're all set!                 ║");
+  console.log("  ╚══════════════════════════════════════════╝");
   console.log("");
   if (name) {
-    console.log(`  Welcome aboard, ${name}.`);
+    console.log(`  Welcome, ${name}.`);
     console.log("");
   }
-  console.log("  Try these commands:");
-  console.log("    npm run canvas:preview    - see upcoming deadlines");
-  console.log("    npm run canvas:sync       - sync assignments");
-  console.log("    npm run updates -- --days 7  - weekly plan");
-  console.log("    npm run prep -- --course \"Course Name\"");
+  console.log("  Next steps:");
   console.log("");
-  console.log("  Or use the Aristotle skill in Claude Code:");
+  console.log("    npm run canvas:preview           → see upcoming deadlines");
+  console.log("    npm run canvas:sync              → pull assignments");
+  console.log("    npm run updates -- --days 7      → weekly plan");
+  console.log("    npm run prep -- --course \"ECE 3510\"  → course prep");
+  console.log("");
+  console.log("  Use as a skill in Claude Code / Codex:");
+  console.log("");
   console.log("    npm run skill:install");
-  console.log("    then: use $aristotle to check my next 7 days");
+  console.log("    → \"use $aristotle to check my next 7 days\"");
   console.log("");
 }
 
@@ -187,6 +204,31 @@ async function verifyTelegram(
     };
     if (!data.ok || !data.result) return null;
     return { username: data.result.username };
+  } catch {
+    return null;
+  }
+}
+
+async function detectTelegramChatId(
+  botToken: string,
+): Promise<string | null> {
+  try {
+    const response = await fetch(
+      `https://api.telegram.org/bot${botToken}/getUpdates?limit=5`,
+    );
+    const data = (await response.json()) as {
+      ok: boolean;
+      result?: Array<{
+        message?: { chat?: { id: number } };
+      }>;
+    };
+    if (!data.ok || !data.result?.length) return null;
+
+    for (const update of data.result) {
+      const chatId = update.message?.chat?.id;
+      if (chatId) return String(chatId);
+    }
+    return null;
   } catch {
     return null;
   }
