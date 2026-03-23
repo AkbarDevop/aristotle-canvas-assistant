@@ -1,4 +1,4 @@
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import type { CanvasConfig } from "../config.js";
 
@@ -83,7 +83,7 @@ async function downloadFile(
   }
 
   const buffer = Buffer.from(await response.arrayBuffer());
-  const outputPath = path.join(outputDir, fileInfo.filename);
+  const outputPath = path.join(outputDir, path.basename(fileInfo.filename));
   await writeFile(outputPath, buffer);
   return outputPath;
 }
@@ -107,6 +107,7 @@ export async function downloadAssignmentFiles(
   fileIds: number[],
   outputDir: string,
 ): Promise<string[]> {
+  await mkdir(outputDir, { recursive: true });
   const paths: string[] = [];
   for (const fileId of fileIds) {
     const filePath = await downloadFile(config, courseId, fileId, outputDir);

@@ -1110,16 +1110,18 @@ async function runGenerateCommand(
 
   if (subcommand === "list") {
     const courseId = readNumberFlag(args, "course-id");
+    const daysBack = Math.max(0, readNumberFlag(args, "days-back") ?? 45);
 
     if (!courseId) {
-      throw new Error("Use `npm run generate:list -- --course-id <id>`.");
+      throw new Error("Use `npm run generate:list -- --course-id <id> [--days-back <n>]`.");
     }
 
     const assignments = await listCourseAssignments(config, courseId);
     const now = new Date();
+    const cutoff = new Date(now.getTime() - daysBack * 24 * 60 * 60 * 1000);
     const relevant = assignments.filter((a) => {
       if (!a.due_at) return a.submission_types[0] !== "none";
-      return new Date(a.due_at) > new Date("2025-01-01");
+      return new Date(a.due_at) > cutoff;
     });
 
     for (const a of relevant) {

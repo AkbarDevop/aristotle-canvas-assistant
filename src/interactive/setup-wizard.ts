@@ -18,6 +18,7 @@ export async function runSetupWizard(): Promise<void> {
     printBanner();
 
     const envPath = path.resolve(process.cwd(), ".env");
+    const existingEnv = existsSync(envPath) ? await readEnvFile(envPath) : {};
     if (existsSync(envPath)) {
       const overwrite = await askYesNo(
         rl,
@@ -98,7 +99,7 @@ export async function runSetupWizard(): Promise<void> {
       canvasAccessToken,
       telegramBotToken,
       telegramChatId,
-    });
+    }, existingEnv);
 
     await writeFile(envPath, envContent, "utf-8");
     console.log("Configuration saved to .env");
@@ -242,57 +243,80 @@ async function firstSync(baseUrl: string, token: string): Promise<void> {
   }
 }
 
-function buildEnvFile(config: SetupResult): string {
+function buildEnvFile(
+  config: SetupResult,
+  existingEnv: Record<string, string>,
+): string {
+  const withFallback = (
+    key: string,
+    nextValue: string | undefined,
+    fallback = "",
+  ): string => nextValue ?? existingEnv[key] ?? fallback;
+
   const lines: string[] = [
-    "ARISTOTLE_DATA_DIR=./aristotle-data",
+    `ARISTOTLE_DATA_DIR=${withFallback("ARISTOTLE_DATA_DIR", undefined, "./aristotle-data")}`,
     "",
     `CANVAS_BASE_URL=${config.canvasBaseUrl}`,
     `CANVAS_ACCESS_TOKEN=${config.canvasAccessToken}`,
     "",
     "# Google Calendar + Google Tasks",
-    "GOOGLE_CLIENT_CREDENTIALS_PATH=",
-    "GOOGLE_CALENDAR_TOKEN_PATH=./aristotle-data/google-calendar-token.json",
-    "GOOGLE_CALENDAR_ID=primary",
-    "GOOGLE_TASKS_TOKEN_PATH=./aristotle-data/google-tasks-token.json",
-    "GOOGLE_TASKS_LIST_ID=",
+    `GOOGLE_CLIENT_CREDENTIALS_PATH=${withFallback("GOOGLE_CLIENT_CREDENTIALS_PATH", undefined)}`,
+    `GOOGLE_CALENDAR_TOKEN_PATH=${withFallback("GOOGLE_CALENDAR_TOKEN_PATH", undefined, "./aristotle-data/google-calendar-token.json")}`,
+    `GOOGLE_CALENDAR_ID=${withFallback("GOOGLE_CALENDAR_ID", undefined, "primary")}`,
+    `GOOGLE_TASKS_TOKEN_PATH=${withFallback("GOOGLE_TASKS_TOKEN_PATH", undefined, "./aristotle-data/google-tasks-token.json")}`,
+    `GOOGLE_TASKS_LIST_ID=${withFallback("GOOGLE_TASKS_LIST_ID", undefined)}`,
     "",
     "# Trello",
-    "TRELLO_API_KEY=",
-    "TRELLO_TOKEN=",
-    "TRELLO_BOARD_ID=",
-    "TRELLO_DEFAULT_LIST_ID=",
+    `TRELLO_API_KEY=${withFallback("TRELLO_API_KEY", undefined)}`,
+    `TRELLO_TOKEN=${withFallback("TRELLO_TOKEN", undefined)}`,
+    `TRELLO_BOARD_ID=${withFallback("TRELLO_BOARD_ID", undefined)}`,
+    `TRELLO_DEFAULT_LIST_ID=${withFallback("TRELLO_DEFAULT_LIST_ID", undefined)}`,
     "",
     "# Todoist",
-    "TODOIST_API_TOKEN=",
-    "TODOIST_PROJECT_ID=",
+    `TODOIST_API_TOKEN=${withFallback("TODOIST_API_TOKEN", undefined)}`,
+    `TODOIST_PROJECT_ID=${withFallback("TODOIST_PROJECT_ID", undefined)}`,
     "",
     "# Notion",
-    "NOTION_API_TOKEN=",
-    "NOTION_PARENT_PAGE_ID=",
+    `NOTION_API_TOKEN=${withFallback("NOTION_API_TOKEN", undefined)}`,
+    `NOTION_PARENT_PAGE_ID=${withFallback("NOTION_PARENT_PAGE_ID", undefined)}`,
     "",
     "# Microsoft Graph (Outlook Calendar + Microsoft To Do)",
-    "MICROSOFT_GRAPH_ACCESS_TOKEN=",
-    "MICROSOFT_CALENDAR_ID=",
-    "MICROSOFT_TODO_LIST_ID=",
-    "MICROSOFT_TIME_ZONE=America/Chicago",
+    `MICROSOFT_GRAPH_ACCESS_TOKEN=${withFallback("MICROSOFT_GRAPH_ACCESS_TOKEN", undefined)}`,
+    `MICROSOFT_CALENDAR_ID=${withFallback("MICROSOFT_CALENDAR_ID", undefined)}`,
+    `MICROSOFT_TODO_LIST_ID=${withFallback("MICROSOFT_TODO_LIST_ID", undefined)}`,
+    `MICROSOFT_TIME_ZONE=${withFallback("MICROSOFT_TIME_ZONE", undefined, "America/Chicago")}`,
     "",
     "# Telegram Bot",
   ];
 
-  if (config.telegramBotToken) {
-    lines.push(`TELEGRAM_BOT_TOKEN=${config.telegramBotToken}`);
-  } else {
-    lines.push("TELEGRAM_BOT_TOKEN=");
-  }
-
-  if (config.telegramChatId) {
-    lines.push(`TELEGRAM_CHAT_ID=${config.telegramChatId}`);
-  } else {
-    lines.push("TELEGRAM_CHAT_ID=");
-  }
+  lines.push(`TELEGRAM_BOT_TOKEN=${withFallback("TELEGRAM_BOT_TOKEN", config.telegramBotToken)}`);
+  lines.push(`TELEGRAM_CHAT_ID=${withFallback("TELEGRAM_CHAT_ID", config.telegramChatId)}`);
 
   lines.push("");
   return lines.join("\n");
+}
+
+async function readEnvFile(envPath: string): Promise<Record<string, string>> {
+  const contents = await readFile(envPath, "utf-8");
+  const values: Record<string, string> = {};
+
+  for (const rawLine of contents.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) {
+      continue;
+    }
+
+    const separatorIndex = line.indexOf("=");
+    if (separatorIndex <= 0) {
+      continue;
+    }
+
+    const key = line.slice(0, separatorIndex).trim();
+    const value = line.slice(separatorIndex + 1);
+    values[key] = value;
+  }
+
+  return values;
 }
 
 async function askRequired(

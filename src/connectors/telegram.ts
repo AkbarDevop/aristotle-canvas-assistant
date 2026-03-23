@@ -27,7 +27,6 @@ export class TelegramClient {
       body: JSON.stringify({
         chat_id: targetChatId,
         text,
-        parse_mode: "HTML",
       }),
     });
 
@@ -57,7 +56,6 @@ export class TelegramClient {
     formData.append("document", new Blob([fileBuffer]), fileName);
     if (caption) {
       formData.append("caption", caption);
-      formData.append("parse_mode", "HTML");
     }
 
     const response = await fetch(`${this.apiBase}/sendDocument`, {
