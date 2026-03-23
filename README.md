@@ -1,6 +1,6 @@
 # Aristotle Canvas Assistant
 
-> **Get started in 30 seconds.** Clone → install → run setup. One token, done.
+> **Get started in 30 seconds.** Just copy this command to your terminal
 
 ```bash
 git clone https://github.com/AkbarDevop/aristotle-canvas-assistant.git
