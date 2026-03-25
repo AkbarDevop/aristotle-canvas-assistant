@@ -4,4 +4,4 @@ dist
 .env
 .env.local
 aristotle-data
-generated
+generated/*.pdf
